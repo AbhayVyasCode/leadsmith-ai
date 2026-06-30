@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Leadsmith AI">
+  <defs>
+    <linearGradient id="ls-spark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3FB6D9"/>
+      <stop offset="1" stop-color="#0E86B8"/>
+    </linearGradient>
+  </defs>
+  <path d="M9.5 1.5 Q11.9 10.6 15.5 13 Q11.9 15.4 9.5 22.5 Q7.1 15.4 3.5 13 Q7.1 10.6 9.5 1.5 Z" fill="url(#ls-spark)"/>
+  <path d="M18.5 2 Q19.6 4.4 21.5 5.5 Q19.6 6.6 18.5 9 Q17.4 6.6 15.5 5.5 Q17.4 4.4 18.5 2 Z" fill="url(#ls-spark)" opacity="0.6"/>
+</svg>
