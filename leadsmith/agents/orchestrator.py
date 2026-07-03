@@ -1,19 +1,9 @@
-"""Supervisor that coordinates the agents into one concurrent run.
-
-Flow:
-  intent -> discover -> [per company, concurrently:
-      scrape -> recall(RAG) -> qualify -> score -> (gate) -> enrich -> outreach
-  ] -> remember(RAG) -> ranked RunReport
-
-Concurrency is bounded by the shared RateLimiter (RPM + max simultaneous calls),
-so we can fan out over companies without breaching the free tier.
-"""
+"""Orchestrator: coordinates the multi-agent lead discovery pipeline."""
 
 from __future__ import annotations
 
 import asyncio
 import math
-import re
 import time
 from collections.abc import Callable
 
@@ -29,6 +19,8 @@ from ..memory.rag import ResearchMemory
 from ..models import (
     ICP,
     Company,
+    CompanyList,
+    DimensionScore,
     Lead,
     ProductProfile,
     Qualification,
@@ -37,16 +29,15 @@ from ..models import (
     compute_overall_score,
 )
 from ..tools.web_scrape import scrape_site
+from ..tools.web_search import render_results
+from .base import BaseAgent
 from .critic import CriticAgent
-from .discovery import DiscoveryAgent, _root_domain
+from .discovery import DiscoveryAgent
 from .enricher import EnricherAgent
-from .intent import IntentAgent, detect_product_url
+from .intent import IntentAgent
 from .outreach import OutreachAgent
 from .product_profile import ProductProfileAgent
 from .qualifier import QualifierAgent
-
-ProgressFn = Callable[[str], None]
-EventFn = Callable[[dict], None]
 
 
 def _noop(_: str) -> None:
@@ -57,23 +48,45 @@ def _noop_event(_: dict) -> None:
     pass
 
 
-def _normalize(text: str) -> str:
-    """Whitespace-collapse + casefold, matching how scraped text is stored."""
-    return re.sub(r"\s+", " ", text or "").strip().casefold()
+def _normalize(s: str) -> str:
+    return s.strip().lower()
 
 
-def _ground_dimensions(qual: Qualification, site_text: str) -> None:
-    """Deterministic anti-hallucination nudge (no extra LLM call): if a dimension
-    cites an evidence_quote that does NOT appear verbatim in the scraped text,
-    halve that dimension's confidence so it pulls less weight in the score. Only
-    fires for quotes long enough to be meaningful; lenient (soften, never zero)."""
-    norm_text = _normalize(site_text)
-    if not norm_text:
-        return
+def _ground_dimensions(qual: Qualification, text: str) -> None:
+    """Down-weight any dimension whose evidence_quote isn't in the scraped text."""
     for d in qual.dimensions:
-        quote = _normalize(d.evidence_quote)
-        if len(quote) >= 12 and quote not in norm_text:
-            d.confidence = round(d.confidence * 0.5, 3)
+        if d.evidence_quote and d.evidence_quote not in text:
+            d.confidence *= 0.5
+
+
+def _root_domain(url: str) -> str:
+    from urllib.parse import urlparse
+
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+    net = urlparse(url).netloc.lower()
+    return net[4:] if net.startswith("www.") else net
+
+
+def detect_product_url(text: str) -> str | None:
+    """Extract the first plausible product URL from a free-text request."""
+    import re
+
+    # Look for a fully-qualified URL
+    m = re.search(r"https?://[^\s]+", text)
+    if m:
+        return m.group(0)
+    # Or a bare domain with a known TLD (very permissive — caller validates)
+    m = re.search(
+        r"\b[a-z0-9-]+\.(?:com|org|net|io|ai|co|dev|app|so|sh|tech|cloud)\b", text
+    )
+    if m:
+        return "https://" + m.group(0)
+    return None
+
+
+ProgressFn = Callable[[str], None]
+EventFn = Callable[[dict], None]
 
 
 class Orchestrator:
@@ -87,9 +100,9 @@ class Orchestrator:
         self._cache = Cache(f"{cfg.data_dir}/cache.sqlite")
         self._store = VectorStore(f"{cfg.data_dir}/memory.sqlite")
         self.gemini = GeminiClient(
-            openrouter_api_key=cfg.openrouter_api_key,
-            openrouter_model=cfg.openrouter_model,
-            openrouter_base_url=cfg.openrouter_base_url,
+            nvidia_api_key=cfg.nvidia_api_key,
+            nvidia_model=cfg.nvidia_model,
+            nvidia_base_url=cfg.nvidia_base_url,
             embedding_model=cfg.embedding_model,
             gemini_api_key=cfg.gemini_api_key,
             tavily_api_key=cfg.tavily_api_key,
@@ -216,7 +229,11 @@ class Orchestrator:
             if not announced and discovered:
                 on_progress(
                     f"Found {discovered} candidates"
-                    + (f" ({known_skipped} already known, skipped)" if known_skipped else "")
+                    + (
+                        f" ({known_skipped} already known, skipped)"
+                        if known_skipped
+                        else ""
+                    )
                 )
                 announced = True
 
@@ -226,8 +243,14 @@ class Orchestrator:
             results = await asyncio.gather(
                 *(
                     self._process(
-                        icp, c, recalled, min_score, generate_outreach,
-                        generate_critique, on_progress, on_event,
+                        icp,
+                        c,
+                        recalled,
+                        min_score,
+                        generate_outreach,
+                        generate_critique,
+                        on_progress,
+                        on_event,
                     )
                     for c in fresh
                 ),
@@ -262,6 +285,157 @@ class Orchestrator:
             leads=qualified,
             candidates_found=discovered,
             candidates_skipped=known_skipped,
+            seen_roots=sorted(seen_roots),
+            metrics=self.metrics.as_dict(),
+            trace=self._tracer.export(),
+            duration_seconds=round(time.monotonic() - started, 2),
+        )
+
+    async def continue_find(
+        self,
+        previous_report: RunReport,
+        *,
+        target_leads: int | None = None,
+        scan_cap: int | None = None,
+        min_score: int | None = None,
+        generate_outreach: bool | None = None,
+        generate_critique: bool | None = None,
+        on_progress: ProgressFn = _noop,
+        on_event: EventFn = _noop_event,
+    ) -> RunReport:
+        """Continue finding leads from a previous run's state.
+
+        This method resumes discovery from where the previous run left off,
+        preserving the seen_roots to avoid re-discovering the same companies.
+        The ICP, product profile, and recalled context are reused from the
+        previous run.
+        """
+        started = time.monotonic()
+        self._tracer = Tracer()  # fresh trace root for this continuation
+
+        # Extract state from previous report
+        request = previous_report.request
+        icp = previous_report.icp
+        product = previous_report.product
+        qualified = list(previous_report.leads)  # copy
+        discovered = previous_report.candidates_found
+        known_skipped = previous_report.candidates_skipped
+        total_scanned = previous_report.metrics.get("total_scanned", 0)
+        wave = previous_report.metrics.get("waves", 0)
+        seen_roots = set(previous_report.seen_roots)
+
+        # Use new params or fall back to previous run's implied defaults
+        # Note: we can't know the exact previous target_leads/cap/min_score,
+        # so we use the provided values or sensible defaults.
+        target_leads = max(1, target_leads or 5)
+        cap = scan_cap if scan_cap is not None else self.cfg.hard_scan_cap
+        min_score = 40 if min_score is None else min_score
+        generate_outreach = (
+            generate_outreach if generate_outreach is not None else False
+        )
+        generate_critique = (
+            generate_critique if generate_critique is not None else False
+        )
+
+        # Recompute recalled context (cheap, uses persistent memory)
+        with self._tracer.span("recall"):
+            recalled = await self.memory.recall(icp)
+
+        on_progress(f"Continuing discovery in {icp.industry} / {icp.geography}...")
+
+        announced = False
+
+        while (
+            len(qualified) < target_leads
+            and total_scanned < cap
+            and wave < self.cfg.max_waves
+        ):
+            remaining = target_leads - len(qualified)
+            batch = math.ceil(remaining * self.cfg.overfetch_factor)
+            batch = min(batch, self.cfg.max_per_wave, cap - total_scanned)
+            if batch <= 0:
+                break
+
+            with self._tracer.span("discovery", wave=wave + 1, limit=batch):
+                companies = await self.discovery.run(
+                    icp, limit=batch, exclude_domains=seen_roots, wave=wave
+                )
+            wave += 1
+            self.metrics.waves = wave
+
+            fresh: list[Company] = []
+            new_roots = 0
+            for c in companies:
+                root = _root_domain(c.website)
+                if not root or root in seen_roots:
+                    continue
+                seen_roots.add(root)
+                discovered += 1
+                new_roots += 1
+                if self.memory.seen_domain(c.website):
+                    known_skipped += 1  # already researched in a prior run
+                    continue
+                fresh.append(c)
+
+            if not announced and discovered > previous_report.candidates_found:
+                on_progress(
+                    f"Found {discovered} candidates"
+                    + (
+                        f" ({known_skipped} already known, skipped)"
+                        if known_skipped
+                        else ""
+                    )
+                )
+                announced = True
+
+            if new_roots == 0:
+                break  # discovery exhausted / only repeats -> stop, don't spin
+
+            results = await asyncio.gather(
+                *(
+                    self._process(
+                        icp,
+                        c,
+                        recalled,
+                        min_score,
+                        generate_outreach,
+                        generate_critique,
+                        on_progress,
+                        on_event,
+                    )
+                    for c in fresh
+                ),
+                return_exceptions=True,
+            )
+            total_scanned += len(fresh)
+            self.metrics.total_scanned = total_scanned
+            for res in results:
+                if isinstance(res, Lead):
+                    qualified.append(res)
+                elif isinstance(res, BaseException):
+                    self.metrics.errors += 1
+
+            on_progress(
+                f"wave {wave}: {len(qualified)}/{target_leads} qualified "
+                f"after scanning {total_scanned}"
+            )
+
+        if not announced:
+            on_progress("Found 0 new candidates")
+
+        # Sort best-first
+        qualified.sort(key=lambda l: l.overall_score, reverse=True)
+        on_progress(f"Done. {len(qualified)} qualified leads total.")
+        self._tracer.finish()
+
+        return RunReport(
+            request=request,
+            icp=icp,
+            product=product,
+            leads=qualified,
+            candidates_found=discovered,
+            candidates_skipped=known_skipped,
+            seen_roots=sorted(seen_roots),
             metrics=self.metrics.as_dict(),
             trace=self._tracer.export(),
             duration_seconds=round(time.monotonic() - started, 2),

@@ -24,10 +24,10 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # --- Chat / reasoning model: ANY OpenRouter model (free or paid) ---
-    openrouter_api_key: str = Field(default="")
-    openrouter_model: str = "nvidia/nemotron-3-super-120b-a12b:free"
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # --- Chat / reasoning model: NVIDIA Build API ---
+    nvidia_api_key: str = Field(default="")
+    nvidia_model: str = "meta/llama-3.1-70b-instruct"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
 
     # --- Web search: Tavily (replaces Gemini Google Search grounding) ---
     tavily_api_key: str = Field(default="")
@@ -36,12 +36,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default="")
     embedding_model: str = "gemini-embedding-001"
 
-    # OpenRouter free models cap at ~20 requests/minute (50/day under ~$10 of
-    # purchased credits, 1000/day at/above it).
+    # NVIDIA API caps (adjust as needed for your plan)
     rpm_limit: int = 20
     max_concurrency: int = 4
 
-    # Gemini embeddings have a separate quota from OpenRouter chat, so they get
+    # Gemini embeddings have a separate quota from NVIDIA chat, so they get
     # their own limiter — sharing one would make embeds eat the chat budget.
     embed_rpm_limit: int = 100
     embed_max_concurrency: int = 4
@@ -61,9 +60,9 @@ class Settings(BaseSettings):
 
     def validated(self) -> "Settings":
         missing: list[str] = []
-        if not self.openrouter_api_key or self.openrouter_api_key == "your_key_here":
+        if not self.nvidia_api_key or self.nvidia_api_key == "your_key_here":
             missing.append(
-                "OPENROUTER_API_KEY (chat model) — get one at https://openrouter.ai/keys"
+                "NVIDIA_API_KEY (chat model) — get one at https://build.nvidia.com/"
             )
         if not self.tavily_api_key or self.tavily_api_key == "your_key_here":
             missing.append(

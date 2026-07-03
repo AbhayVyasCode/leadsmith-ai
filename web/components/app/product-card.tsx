@@ -7,13 +7,15 @@ import type { ProductProfile } from "@/lib/types";
  */
 export function ProductCard({ product }: { product: ProductProfile }) {
   return (
-    <section className="premium-panel overflow-hidden rounded-2xl">
-      <div className="border-b border-border px-5 py-4">
+    <section className="overflow-hidden rounded-2xl border border-border/40 bg-surface/60 backdrop-blur-sm">
+      <div className="border-b border-border/40 px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Product read</h2>
+          <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-foreground/90">
+            Product read
+          </h2>
           <Badge variant="primary">Product mode</Badge>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-[12px] text-muted-foreground/50">
           Leadsmith used this to infer likely buyers.
         </p>
       </div>
@@ -21,23 +23,25 @@ export function ProductCard({ product }: { product: ProductProfile }) {
       <div className="flex flex-col gap-5 p-5">
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-medium text-foreground">
-              {product.product_name || "-"}
+            <span className="text-[15px] font-medium text-foreground/90">
+              {product.product_name || "—"}
             </span>
             {product.category ? (
-              <span className="text-xs text-muted-foreground">{product.category}</span>
+              <span className="text-[12px] text-muted-foreground/50">
+                {product.category}
+              </span>
             ) : null}
           </div>
           {product.what_it_does ? (
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className="text-[13px] leading-relaxed text-muted-foreground/60">
               {product.what_it_does}
             </p>
           ) : null}
         </div>
 
         {product.customer_segments.length > 0 ? (
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+          <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
+            <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50">
               Likely buyer segments
             </span>
             <div className="flex flex-wrap gap-1.5">

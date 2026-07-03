@@ -4,6 +4,7 @@ import { useCallback, useReducer, useRef } from "react";
 import type {
   AgentKey,
   AgentState,
+  ContinueRequest,
   ICP,
   Lead,
   ProductProfile,
@@ -27,7 +28,11 @@ const AGENT_ORDER: AgentKey[] = [
 ];
 
 function initialAgents(): AgentState[] {
-  return AGENT_ORDER.map((key) => ({ key, label: AGENT_LABELS[key], status: "pending" }));
+  return AGENT_ORDER.map((key) => ({
+    key,
+    label: AGENT_LABELS[key],
+    status: "pending",
+  }));
 }
 
 interface State {
@@ -67,7 +72,11 @@ type Action =
   | { kind: "event"; event: RunEvent }
   | { kind: "reset" };
 
-function applyAgent(agents: AgentState[], key: AgentKey, patch: Partial<AgentState>): AgentState[] {
+function applyAgent(
+  agents: AgentState[],
+  key: AgentKey,
+  patch: Partial<AgentState>,
+): AgentState[] {
   return agents.map((a) => (a.key === key ? { ...a, ...patch } : a));
 }
 
@@ -98,11 +107,16 @@ function reducer(state: State, action: Action): State {
           // it for inline display; do NOT touch run status or the agent nodes.
           return { ...state, warnings: [...state.warnings, e.message] };
         case "candidates":
-          return { ...state, candidatesFound: e.found, candidatesSkipped: e.skipped };
+          return {
+            ...state,
+            candidatesFound: e.found,
+            candidatesSkipped: e.skipped,
+          };
         case "company":
           return {
             ...state,
-            activeCompany: e.status === "running" ? e.name : state.activeCompany,
+            activeCompany:
+              e.status === "running" ? e.name : state.activeCompany,
           };
         case "lead":
           return { ...state, leads: [...state.leads, e.lead] };
@@ -160,7 +174,10 @@ export function useLeadsmithRun() {
       });
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
-      dispatch({ kind: "event", event: { type: "error", message: (err as Error).message } });
+      dispatch({
+        kind: "event",
+        event: { type: "error", message: (err as Error).message },
+      });
     }
   }, []);
 
@@ -174,5 +191,34 @@ export function useLeadsmithRun() {
     dispatch({ kind: "reset" });
   }, []);
 
-  return { ...state, start, cancel, reset };
+  const continueRun = useCallback(
+    async (flags: RunFlags) => {
+      const { report } = state;
+      if (!report) return;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // Don't reset the state - we want to keep existing leads and append new ones
+      // The backend will return a new report with all leads (old + new)
+      dispatch({ kind: "start", request: report.request });
+      try {
+        const continueRequest: ContinueRequest = { report, flags };
+        await leadsmith.continue(continueRequest, {
+          signal: controller.signal,
+          onEvent: (event) => dispatch({ kind: "event", event }),
+        });
+      } catch (err) {
+        if ((err as Error)?.name === "AbortError") return;
+        dispatch({
+          kind: "event",
+          event: { type: "error", message: (err as Error).message },
+        });
+      }
+    },
+    [state.report],
+  );
+
+  return { ...state, start, cancel, reset, continue: continueRun };
 }

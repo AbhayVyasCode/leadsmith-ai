@@ -146,7 +146,10 @@ function BulletList({ items }: { items: string[] }) {
           key={item}
           className="flex gap-2 text-sm leading-relaxed text-muted-foreground"
         >
-          <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-border" />
+          <span
+            aria-hidden
+            className="mt-2 size-1 shrink-0 rounded-full bg-border"
+          />
           <span>{item}</span>
         </li>
       ))}
@@ -168,7 +171,10 @@ function ContactRow({ contact }: { contact: Contact }) {
       </div>
       {contact.email ? (
         <span className="flex min-w-0 items-center gap-2">
-          <Mail aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+          <Mail
+            aria-hidden
+            className="size-3.5 shrink-0 text-muted-foreground"
+          />
           <span className="tnum min-w-0 flex-1 truncate font-mono text-xs text-foreground">
             {contact.email}
           </span>
@@ -208,8 +214,10 @@ export function LeadDrawer({
       >
         {lead ? (
           <>
-            <SheetHeader className="gap-2 border-b border-border p-6 pr-14">
-              <SheetTitle className="text-balance">{lead.company.name}</SheetTitle>
+            <SheetHeader className="gap-2 border-b border-border px-6 py-5 pr-14">
+              <SheetTitle className="text-balance font-display text-xl tracking-[-0.02em]">
+                {lead.company.name}
+              </SheetTitle>
               <a
                 href={href(lead.company.website)}
                 target="_blank"
@@ -217,7 +225,9 @@ export function LeadDrawer({
                 className="inline-flex w-fit items-center gap-1.5 text-sm text-link underline-offset-4 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <ExternalLink aria-hidden className="size-3.5 shrink-0" />
-                <span className="truncate">{stripScheme(lead.company.website)}</span>
+                <span className="truncate">
+                  {stripScheme(lead.company.website)}
+                </span>
               </a>
             </SheetHeader>
 
@@ -275,7 +285,9 @@ export function LeadDrawer({
                   <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface-2 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <SectionLabel>Critic verdict</SectionLabel>
-                      <Badge variant={VERDICT_META[lead.critique.verdict].variant}>
+                      <Badge
+                        variant={VERDICT_META[lead.critique.verdict].variant}
+                      >
                         {VERDICT_META[lead.critique.verdict].label}
                       </Badge>
                     </div>
@@ -346,7 +358,9 @@ export function LeadDrawer({
           </>
         ) : (
           <SheetHeader className="p-6 pr-14">
-            <SheetTitle className="text-muted-foreground">No lead selected</SheetTitle>
+            <SheetTitle className="text-muted-foreground">
+              No lead selected
+            </SheetTitle>
           </SheetHeader>
         )}
       </SheetContent>

@@ -52,7 +52,18 @@ def _build_query(icp: ICP, wave: int = 0) -> str:
         offset = (wave * 2) % n
         rotated = kws[offset:] + kws[:offset]
         picked = rotated[:3]
-    parts = [icp.industry, icp.geography, *picked]
+    
+    # If the LLM generated keywords, rely on them. Appending verbose 
+    # industry/geography strings confuses the search engine.
+    if picked:
+        return " ".join(picked)
+        
+    # Fallback if no keywords were generated
+    parts = [icp.industry]
+    # Only append geography if it's concise and not "Global..."
+    if icp.geography and len(icp.geography) < 25 and "global" not in icp.geography.lower():
+        parts.append(icp.geography)
+    
     return " ".join(p for p in parts if p).strip() or icp.industry
 
 

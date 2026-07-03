@@ -14,7 +14,10 @@ import { ConfidenceMeter } from "@/components/app/confidence-meter";
 const EASE = [0.32, 0.72, 0, 1] as const;
 
 /** Variants for staggering table rows in — mirrors the shared Stagger helper. */
-const ROW_CONTAINER = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const ROW_CONTAINER = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
 const ROW_ITEM = {
   hidden: { opacity: 0, y: 8 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } },
@@ -199,12 +202,12 @@ export function LeadsTable({
   return (
     <section aria-label="Discovered leads">
       {/* Desktop: real table */}
-      <div className="hidden overflow-hidden rounded-lg border border-border bg-surface md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface md:block">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-surface-2/80 backdrop-blur supports-[backdrop-filter]:bg-surface-2/60">
+            <thead className="sticky top-0 z-10">
               <tr className="border-b border-border text-left">
-                <th scope="col" className="px-4 py-3 text-right">
+                <th scope="col" className="px-5 py-3.5 text-right">
                   <div className="flex justify-end">
                     <SortButton
                       label="Score"
@@ -215,7 +218,7 @@ export function LeadsTable({
                     />
                   </div>
                 </th>
-                <th scope="col" className="px-4 py-3 text-right">
+                <th scope="col" className="px-5 py-3.5 text-right">
                   <div className="flex justify-end">
                     <SortButton
                       label="Confidence"
@@ -226,7 +229,7 @@ export function LeadsTable({
                     />
                   </div>
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-5 py-3.5">
                   <SortButton
                     label="Company"
                     active={sortKey === "company"}
@@ -236,26 +239,25 @@ export function LeadsTable({
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground"
+                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
                 >
                   Top contact
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground"
+                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
                 >
                   Outreach angle
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground"
+                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
                 >
                   Flags
                 </th>
               </tr>
             </thead>
             <motion.tbody
-              className="divide-y divide-border"
               initial={reduced ? undefined : "hidden"}
               animate={reduced ? undefined : "show"}
               variants={reduced ? undefined : ROW_CONTAINER}
@@ -271,19 +273,19 @@ export function LeadsTable({
                     aria-label={`Open ${lead.company.name}`}
                     onClick={() => onSelect(lead)}
                     onKeyDown={makeRowKeyHandler(() => onSelect(lead))}
-                    className="cursor-pointer align-top outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                    className="table-row-premium cursor-pointer align-top outline-none focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                   >
-                    <td className="px-4 py-3 text-right align-middle">
+                    <td className="px-5 py-4 text-right align-middle">
                       <div className="flex justify-end">
-                        <ScoreRing score={lead.overall_score} size={40} />
+                        <ScoreRing score={lead.overall_score} size={42} />
                       </div>
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-5 py-4 align-middle">
                       <ConfidenceMeter value={lead.confidence} />
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-5 py-4 align-middle">
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate font-medium text-foreground">
+                        <span className="truncate font-semibold tracking-[-0.01em] text-foreground">
                           {lead.company.name}
                         </span>
                         <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
@@ -297,15 +299,15 @@ export function LeadsTable({
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-5 py-4 align-middle">
                       <ContactCell contact={contact} />
                     </td>
-                    <td className="max-w-[18rem] px-4 py-3 align-middle">
-                      <span className="line-clamp-2 text-sm text-muted-foreground">
+                    <td className="max-w-[18rem] px-5 py-4 align-middle">
+                      <span className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                         {lead.qualification.outreach_angle || "—"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-5 py-4 align-middle">
                       <FlagBadges flags={lead.flags} />
                     </td>
                   </motion.tr>
@@ -331,7 +333,7 @@ export function LeadsTable({
                 aria-label={`Open ${lead.company.name}`}
                 onClick={() => onSelect(lead)}
                 onKeyDown={makeRowKeyHandler(() => onSelect(lead))}
-                className="cursor-pointer p-4 outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="cursor-pointer p-4 outline-none transition-all duration-200 hover:bg-muted/50 hover:shadow-md focus-visible:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <div className="flex items-start gap-3">
                   <ScoreRing score={lead.overall_score} size={48} />

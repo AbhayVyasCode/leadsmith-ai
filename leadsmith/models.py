@@ -65,7 +65,9 @@ class CompanyList(BaseModel):
 class DimensionScore(BaseModel):
     """A single scored dimension with its supporting evidence."""
 
-    dimension: str = Field(description="One of: industry_fit, size_fit, pain_severity, buying_intent.")
+    dimension: str = Field(
+        description="One of: industry_fit, size_fit, pain_severity, buying_intent."
+    )
     score: int = Field(ge=0, le=100)
     evidence: str = Field(description="Concrete evidence from the site for this score.")
     evidence_quote: str = Field(
@@ -171,6 +173,8 @@ class RunReport(BaseModel):
     candidates_skipped: int = Field(
         default=0, description="Candidates dropped as already-researched (dedupe)."
     )
+    # Root domains seen during discovery (for continuation / pagination).
+    seen_roots: list[str] = Field(default_factory=list)
     metrics: dict = Field(default_factory=dict)
     trace: dict | None = None
     duration_seconds: float = 0.0

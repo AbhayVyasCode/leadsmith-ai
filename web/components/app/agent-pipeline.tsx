@@ -72,24 +72,35 @@ function PipelineNode({
   const Icon = visual.icon;
   const label = AGENT_LABELS[agent.key] ?? agent.label;
   const running = agent.status === "running";
+  const done = agent.status === "done";
 
   return (
-    <li className="flex min-w-0 flex-col items-center gap-2 text-center">
+    <li className="flex min-w-0 flex-col items-center gap-2.5 text-center">
       <span className="relative inline-flex">
-        {/* shimmer halo while running (opacity-only, reduced-motion gated) */}
+        {/* Premium pulse ring while running */}
         {running && !reduced ? (
           <motion.span
             aria-hidden
-            className="absolute inset-0 rounded-full bg-primary/20"
-            initial={{ opacity: 0.15, scale: 1 }}
-            animate={{ opacity: [0.15, 0.4, 0.15], scale: [1, 1.18, 1] }}
+            className="absolute -inset-1 rounded-full border-2 border-primary/30"
+            initial={{ opacity: 0.6, scale: 1 }}
+            animate={{ opacity: [0.6, 0, 0.6], scale: [1, 1.25, 1] }}
+            transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+          />
+        ) : null}
+        {running && !reduced ? (
+          <motion.span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-primary/15"
+            initial={{ opacity: 0.2, scale: 1 }}
+            animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
             transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
           />
         ) : null}
         <span
           className={cn(
-            "relative inline-flex size-9 items-center justify-center rounded-full border bg-surface transition-colors",
+            "relative inline-flex size-10 items-center justify-center rounded-full border-[1.5px] bg-surface transition-all duration-300",
             visual.ring,
+            done && "bg-success/[0.04]",
           )}
         >
           <Icon
@@ -106,7 +117,7 @@ function PipelineNode({
       <span className="flex flex-col items-center gap-0.5">
         <span
           className={cn(
-            "text-xs font-medium leading-none",
+            "text-xs font-semibold tracking-[-0.01em] leading-none",
             agent.status === "pending"
               ? "text-muted-foreground"
               : "text-foreground",
@@ -133,7 +144,10 @@ function Connector({
   reduced: boolean | null;
 }) {
   return (
-    <li aria-hidden className="mt-[18px] flex h-px min-w-6 flex-1 self-start sm:mt-[18px]">
+    <li
+      aria-hidden
+      className="mt-[18px] flex h-px min-w-6 flex-1 self-start sm:mt-[18px]"
+    >
       <span className="relative h-px w-full overflow-hidden rounded-full bg-border">
         {filled ? (
           reduced ? (
@@ -167,12 +181,18 @@ export function AgentPipeline({
   const reduced = useReducedMotion();
 
   return (
-    <section className="premium-panel overflow-hidden rounded-2xl" aria-labelledby="agent-pipeline-heading">
-      <div className="border-b border-border px-5 py-4">
-        <h2 id="agent-pipeline-heading" className="text-sm font-semibold text-foreground">
+    <section
+      className="overflow-hidden rounded-2xl border border-border/40 bg-surface/60 backdrop-blur-sm"
+      aria-labelledby="agent-pipeline-heading"
+    >
+      <div className="border-b border-border/40 px-5 py-4">
+        <h2
+          id="agent-pipeline-heading"
+          className="text-[13px] font-semibold text-foreground/90"
+        >
           Agent pipeline
         </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-[12px] text-muted-foreground/50">
           Each specialist passes evidence to the next step.
         </p>
       </div>
@@ -200,15 +220,20 @@ export function AgentPipeline({
           <p
             role="status"
             aria-live="polite"
-            className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"
+            className="mt-4 flex items-center gap-2 text-[12px] text-muted-foreground/60"
           >
             <Loader2
               aria-hidden
-              className={cn("size-3 text-primary", reduced ? undefined : "animate-spin")}
+              className={cn(
+                "size-3 text-primary",
+                reduced ? undefined : "animate-spin",
+              )}
             />
             <span>
               Processing{" "}
-              <span className="font-medium text-foreground">{activeCompany}</span>
+              <span className="font-medium text-foreground">
+                {activeCompany}
+              </span>
               {"..."}
             </span>
           </p>

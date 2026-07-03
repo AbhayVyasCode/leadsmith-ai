@@ -25,10 +25,10 @@ function StatCard({ stat }: { stat: Stat }) {
   const Icon = stat.icon;
   return (
     <StaggerItem>
-      <Card className="flex h-full flex-col gap-3 p-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Icon className="size-4 shrink-0" aria-hidden />
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em]">
+      <Card className="stat-card flex h-full flex-col gap-3 p-4">
+        <div className="flex items-center gap-2 text-muted-foreground/50">
+          <Icon className="size-3.5 shrink-0" aria-hidden />
+          <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em]">
             {stat.label}
           </span>
         </div>
@@ -37,10 +37,12 @@ function StatCard({ stat }: { stat: Stat }) {
             value={stat.value}
             decimals={stat.decimals}
             suffix={stat.suffix}
-            className="tnum font-mono text-2xl font-semibold tracking-tight text-foreground"
+            className="tnum font-display text-2xl font-semibold tracking-[-0.02em] text-foreground/90"
           />
           {stat.caption ? (
-            <span className="tnum font-mono text-xs text-success">{stat.caption}</span>
+            <span className="tnum font-mono text-[11px] text-success/80">
+              {stat.caption}
+            </span>
           ) : null}
         </div>
       </Card>
@@ -104,10 +106,13 @@ export function MetricsBar({
   ];
 
   return (
-    <section aria-labelledby="run-metrics-heading" className="flex flex-col gap-4">
+    <section
+      aria-labelledby="run-metrics-heading"
+      className="flex flex-col gap-4"
+    >
       <h2
         id="run-metrics-heading"
-        className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground"
+        className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
       >
         Run metrics
       </h2>
@@ -116,18 +121,18 @@ export function MetricsBar({
         {stats.map((stat) =>
           stat.key === "cost" ? (
             <StaggerItem key={stat.key}>
-              <Card className="flex h-full flex-col gap-3 p-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Coins className="size-4 shrink-0" aria-hidden />
-                  <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em]">
+              <Card className="stat-card flex h-full flex-col gap-3 p-4">
+                <div className="flex items-center gap-2 text-muted-foreground/50">
+                  <Coins className="size-3.5 shrink-0" aria-hidden />
+                  <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em]">
                     {stat.label}
                   </span>
                 </div>
                 <div className="mt-auto flex flex-col gap-0.5">
-                  <span className="tnum font-mono text-2xl font-semibold tracking-tight text-foreground">
+                  <span className="tnum font-display text-2xl font-semibold tracking-[-0.02em] text-foreground/90">
                     {formatCost(metrics.estimated_cost_usd)}
                   </span>
-                  <span className="tnum font-mono text-xs text-success">
+                  <span className="tnum font-mono text-[11px] text-success/80">
                     {stat.caption}
                   </span>
                 </div>

@@ -12,7 +12,7 @@ The agents build on three primitives (interface unchanged from the old client):
   - embed():      Gemini embedding vector for the RAG memory (asymmetric task
                   types) — kept on Gemini so the existing vector store stays valid.
 
-Chat (OpenRouter) and embeddings (Gemini) hit different providers with separate
+Chat (NVIDIA) and embeddings (Gemini) hit different providers with separate
 quotas, so each gets its own RateLimiter.
 """
 
@@ -176,9 +176,9 @@ class LLMClient:
     def __init__(
         self,
         *,
-        openrouter_api_key: str,
-        openrouter_model: str,
-        openrouter_base_url: str,
+        nvidia_api_key: str,
+        nvidia_model: str,
+        nvidia_base_url: str,
         embedding_model: str,
         gemini_api_key: str,
         tavily_api_key: str,
@@ -188,8 +188,8 @@ class LLMClient:
         metrics: Metrics,
     ) -> None:
         self._chat = openai.AsyncOpenAI(
-            api_key=openrouter_api_key,
-            base_url=openrouter_base_url,
+            api_key=nvidia_api_key,
+            base_url=nvidia_base_url,
             # Bound every request so a stalled free-tier endpoint fails fast and
             # is retried/surfaced, instead of hanging up to the SDK's 600s default.
             timeout=httpx.Timeout(60.0, connect=10.0),
@@ -199,7 +199,7 @@ class LLMClient:
                 "X-Title": "Leadsmith",
             },
         )
-        self._model = openrouter_model
+        self._model = nvidia_model
         self._gemini = genai.Client(api_key=gemini_api_key)
         self._embedding_model = embedding_model
         self._tavily_api_key = tavily_api_key

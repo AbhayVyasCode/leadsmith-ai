@@ -18,10 +18,10 @@ export function EmptyInitial({ onPick }: { onPick: (q: string) => void }) {
       className="mx-auto flex w-full max-w-md flex-col items-center px-6 py-16 text-center"
     >
       <Reveal className="flex flex-col items-center">
-        <BrandMark className="size-12 opacity-80" />
+        <BrandMark className="size-12 opacity-60" />
         <h2
           id="empty-initial-heading"
-          className="mt-5 text-xl font-semibold tracking-tight text-foreground"
+          className="mt-5 text-xl font-semibold tracking-tight text-foreground/90"
         >
           Describe your ideal customer
         </h2>
@@ -38,7 +38,7 @@ export function EmptyInitial({ onPick }: { onPick: (q: string) => void }) {
               type="button"
               variant="outline"
               size="sm"
-              className="h-auto whitespace-normal py-1.5 text-left"
+              className="h-auto whitespace-normal rounded-full border-border/50 py-1.5 text-left text-muted-foreground/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/[0.04] hover:text-foreground"
               onClick={() => onPick(query)}
             >
               {query}
@@ -107,7 +107,7 @@ export function EmptyNoResults({
   return (
     <Reveal className="mx-auto flex w-full max-w-md flex-col items-center px-6 py-16 text-center">
       <span
-        className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
+        className="flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground/50"
         aria-hidden
       >
         <SearchX className="size-6" />

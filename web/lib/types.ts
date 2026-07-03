@@ -21,10 +21,7 @@ export interface Company {
 }
 
 export type DimensionKey =
-  | "industry_fit"
-  | "size_fit"
-  | "pain_severity"
-  | "buying_intent";
+  "industry_fit" | "size_fit" | "pain_severity" | "buying_intent";
 
 export interface DimensionScore {
   dimension: DimensionKey | string;
@@ -102,11 +99,7 @@ export interface TraceNode {
 }
 
 export type NoLeadsReason =
-  | "no_candidates"
-  | "all_known"
-  | "below_gate"
-  | "errors"
-  | null;
+  "no_candidates" | "all_known" | "below_gate" | "errors" | null;
 
 /**
  * The seller's product, scraped + analyzed in product/reverse-ICP mode. Mirrors
@@ -130,6 +123,7 @@ export interface RunReport {
   leads: Lead[];
   candidates_found: number;
   candidates_skipped: number;
+  seen_roots: string[];
   metrics: RunMetrics;
   trace: TraceNode | null;
   duration_seconds: number;
@@ -148,6 +142,11 @@ export interface RunFlags {
   outreach: boolean; // --outreach
   critic: boolean; // --critic
   trace: boolean; // --trace
+}
+
+export interface ContinueRequest {
+  report: RunReport;
+  flags: RunFlags;
 }
 
 export const DEFAULT_FLAGS: RunFlags = {
@@ -186,7 +185,13 @@ export interface AgentState {
 
 /** Events emitted by the client as a run streams. */
 export type RunEvent =
-  | { type: "phase"; agent: AgentKey; status: AgentStatus; detail?: string; ms?: number }
+  | {
+      type: "phase";
+      agent: AgentKey;
+      status: AgentStatus;
+      detail?: string;
+      ms?: number;
+    }
   | { type: "icp"; icp: ICP }
   | { type: "product"; product: ProductProfile }
   | { type: "candidates"; found: number; skipped: number }

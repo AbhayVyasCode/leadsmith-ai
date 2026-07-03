@@ -8,17 +8,17 @@ type BadgeVariant = NonNullable<ComponentProps<typeof Badge>["variant"]>;
 function Field({ label, value }: { label: string; value: string }) {
   const empty = value.trim().length === 0;
   return (
-    <div className="rounded-xl border border-border bg-background/60 p-3">
-      <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+    <div className="rounded-xl border border-border/40 bg-surface/30 p-3">
+      <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50">
         {label}
       </span>
       <span
         className={cn(
-          "mt-1 block text-sm",
-          empty ? "text-muted-foreground" : "font-medium text-foreground",
+          "mt-1 block text-[13px]",
+          empty ? "text-muted-foreground/40" : "font-medium text-foreground/80",
         )}
       >
-        {empty ? "-" : value}
+        {empty ? "—" : value}
       </span>
     </div>
   );
@@ -35,7 +35,7 @@ function ChipGroup({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+      <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50">
         {label}
       </span>
       {items.length === 0 ? (
@@ -58,10 +58,10 @@ function ChipGroup({
  */
 export function IcpPanel({ icp }: { icp: ICP }) {
   return (
-    <section className="premium-panel overflow-hidden rounded-2xl">
-      <div className="border-b border-border px-5 py-4">
-        <h2 className="text-sm font-semibold text-foreground">Buyer profile</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+    <section className="overflow-hidden rounded-2xl border border-border/40 bg-surface/60 backdrop-blur-sm">
+      <div className="border-b border-border/40 px-5 py-4">
+        <h2 className="text-[13px] font-semibold text-foreground/90">Buyer profile</h2>
+        <p className="mt-1 text-[12px] text-muted-foreground/50">
           The structured target Leadsmith inferred from your request.
         </p>
       </div>
@@ -73,9 +73,21 @@ export function IcpPanel({ icp }: { icp: ICP }) {
         </div>
 
         <div className="flex flex-col gap-5 border-t border-border pt-5">
-          <ChipGroup label="Pain points" items={icp.pain_points} variant="warning" />
-          <ChipGroup label="Buying signals" items={icp.buying_signals} variant="primary" />
-          <ChipGroup label="Decision-maker roles" items={icp.decision_maker_roles} variant="outline" />
+          <ChipGroup
+            label="Pain points"
+            items={icp.pain_points}
+            variant="warning"
+          />
+          <ChipGroup
+            label="Buying signals"
+            items={icp.buying_signals}
+            variant="primary"
+          />
+          <ChipGroup
+            label="Decision-maker roles"
+            items={icp.decision_maker_roles}
+            variant="outline"
+          />
           <ChipGroup label="Keywords" items={icp.keywords} variant="default" />
         </div>
       </div>
