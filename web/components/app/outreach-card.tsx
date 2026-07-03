@@ -5,21 +5,9 @@ import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { OutreachDraft } from "@/lib/types";
 
-/**
- * Renders a generated outreach draft (subject + body) for a company with a
- * one-click copy to clipboard. The copy button briefly swaps to a check icon as
- * confirmation and fires a success toast. Body preserves the model's line breaks
- * via `whitespace-pre-line`.
- */
 export function OutreachCard({
   outreach,
   company,
@@ -42,47 +30,48 @@ export function OutreachCard({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 p-5">
-        <div className="flex min-w-0 items-center gap-2">
-          <CardTitle className="text-sm">Outreach draft</CardTitle>
-          <Badge variant="primary">Draft</Badge>
+    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.015]">
+      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium text-foreground/70">Outreach draft</span>
+          <Badge variant="primary" className="text-[10px]">Draft</Badge>
         </div>
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="sm"
           onClick={handleCopy}
           aria-label={`Copy outreach draft for ${company}`}
+          className="gap-1.5 text-[11px] text-muted-foreground/40 hover:text-foreground"
         >
           {copied ? (
             <>
-              <Check aria-hidden className="text-success" />
+              <Check aria-hidden className="size-3 text-emerald-400" />
               Copied
             </>
           ) : (
             <>
-              <Copy aria-hidden />
+              <Copy aria-hidden className="size-3" />
               Copy
             </>
           )}
         </Button>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-5 pt-0">
+      <div className="p-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/30">
             Subject
           </span>
-          <p className="font-medium text-foreground">{outreach.subject}</p>
+          <p className="text-[13px] font-medium text-foreground/70">{outreach.subject}</p>
         </div>
 
-        <Separator className="my-4" />
+        <Separator className="my-3 bg-white/[0.04]" />
 
-        <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
+        <p className="whitespace-pre-line text-[13px] leading-relaxed text-foreground/60">
           {outreach.body}
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

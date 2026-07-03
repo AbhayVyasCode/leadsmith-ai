@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -161,6 +162,7 @@ class Lead(BaseModel):
 
 
 class RunReport(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     request: str
     icp: ICP
     # Set only in product/reverse-ICP mode: the scraped seller product this run's

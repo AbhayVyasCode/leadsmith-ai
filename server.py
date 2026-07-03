@@ -24,6 +24,8 @@ from pydantic import BaseModel
 
 from leadsmith.config import Settings
 from leadsmith.models import RunReport
+from leadsmith.core.vector_store import VectorStore
+from leadsmith.core.run_store import RunStore
 from leadsmith.pipeline import continue_find, find
 
 app = FastAPI(title="Leadsmith API", version="0.1.0")
@@ -148,6 +150,21 @@ def _parse_progress(msg: str) -> list[dict]:
                 "detail": _company(msg),
             }
         )
+    elif ": finished" in msg:
+        # If outreach wasn't requested, it never gets marked done. Ensure both get finished.
+        events.append({"type": "phase", "agent": "enrich", "status": "done"})
+        events.append({"type": "phase", "agent": "outreach", "status": "done"})
+    elif msg.startswith("wave "):
+        # End of a wave: ensure remaining pipeline agents visually complete
+        for agent in ("qualify", "critic", "enrich", "outreach"):
+            events.append({"type": "phase", "agent": agent, "status": "done"})
+    elif msg.startswith("Starting wave "):
+        # New wave starting, signal the emitter to reset the phase_rank tracker
+        events.append({"type": "_RESET_PHASE_RANK"})
+        events.append({"type": "phase", "agent": "discovery", "status": "running"})
+    elif msg.startswith("Done."):
+        for agent in ("qualify", "critic", "enrich", "outreach"):
+            events.append({"type": "phase", "agent": agent, "status": "done"})
     elif "skipped" in low or "dropped" in low:
         events.append(
             {
@@ -157,12 +174,19 @@ def _parse_progress(msg: str) -> list[dict]:
                 "detail": msg,
             }
         )
-    elif msg.startswith("Done."):
-        for agent in ("qualify", "critic", "enrich", "outreach"):
-            events.append({"type": "phase", "agent": agent, "status": "done"})
 
     return events
 
+
+def _get_vector_store() -> VectorStore:
+    cfg = Settings()
+    path = os.path.join(cfg.data_dir, "memory.sqlite")
+    return VectorStore(path)
+
+def _get_run_store() -> RunStore:
+    cfg = Settings()
+    path = os.path.join(cfg.data_dir, "runs.sqlite")
+    return RunStore(path)
 
 @app.get("/api/health")
 async def health() -> dict:
@@ -202,6 +226,11 @@ async def discover(body: DiscoverRequest) -> StreamingResponse:
     phase_rank: dict[str, int] = {"intent": _PHASE_RANK["running"]}
 
     def emit(event: dict) -> None:
+        if event.get("type") == "_RESET_PHASE_RANK":
+            phase_rank.clear()
+            phase_rank["intent"] = _PHASE_RANK["done"]
+            return
+            
         if event.get("type") == "phase":
             agent = event.get("agent", "")
             rank = _PHASE_RANK.get(event.get("status", ""), -1)
@@ -227,6 +256,11 @@ async def discover(body: DiscoverRequest) -> StreamingResponse:
                 on_progress=on_progress,
                 on_event=emit,  # structured icp/lead/product/warning events
             )
+            store = _get_run_store()
+            try:
+                store.save(report.id, report.model_dump())
+            finally:
+                store.close()
             queue.put_nowait({"type": "done", "report": report.model_dump()})
         except Exception as exc:  # surface any runtime/LLM failure to the UI
             queue.put_nowait({"type": "error", "message": str(exc)})
@@ -274,6 +308,11 @@ async def discover_continue(body: ContinueRequest) -> StreamingResponse:
     phase_rank: dict[str, int] = {"intent": _PHASE_RANK["running"]}
 
     def emit(event: dict) -> None:
+        if event.get("type") == "_RESET_PHASE_RANK":
+            phase_rank.clear()
+            phase_rank["intent"] = _PHASE_RANK["done"]
+            return
+            
         if event.get("type") == "phase":
             agent = event.get("agent", "")
             rank = _PHASE_RANK.get(event.get("status", ""), -1)
@@ -292,13 +331,17 @@ async def discover_continue(body: ContinueRequest) -> StreamingResponse:
                 body.report,
                 cfg=cfg,
                 target_leads=body.flags.target,
-                mode=body.flags.mode,
                 min_score=body.flags.minScore,
                 generate_outreach=body.flags.outreach,
                 generate_critique=body.flags.critic,
                 on_progress=on_progress,
                 on_event=emit,  # structured icp/lead/product/warning events
             )
+            store = _get_run_store()
+            try:
+                store.save(report.id, report.model_dump())
+            finally:
+                store.close()
             queue.put_nowait({"type": "done", "report": report.model_dump()})
         except Exception as exc:  # surface any runtime/LLM failure to the UI
             queue.put_nowait({"type": "error", "message": str(exc)})
@@ -324,6 +367,73 @@ async def discover_continue(body: ContinueRequest) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+@app.get("/api/memory")
+async def get_memory(limit: int = 100, offset: int = 0) -> dict:
+    store = _get_vector_store()
+    try:
+        items = store.get_all(limit=limit, offset=offset)
+        total = store.count()
+        return {"items": items, "total": total}
+    finally:
+        store.close()
+
+@app.delete("/api/memory")
+async def clear_memory() -> dict:
+    store = _get_vector_store()
+    try:
+        store.clear()
+        return {"ok": True}
+    finally:
+        store.close()
+
+@app.delete("/api/memory/{id}")
+async def delete_memory(id: str) -> dict:
+    # Next.js sends encoded IDs if they contain slashes/special chars
+    # Wait, the id is typically "lead::domain.com", which is safe, but just in case.
+    store = _get_vector_store()
+    try:
+        deleted = store.delete(id)
+        return {"ok": deleted}
+    finally:
+        store.close()
+
+@app.get("/api/runs")
+async def get_runs(limit: int = 50, offset: int = 0) -> dict:
+    store = _get_run_store()
+    try:
+        items = store.get_summaries(limit=limit, offset=offset)
+        total = store.count()
+        return {"items": items, "total": total}
+    finally:
+        store.close()
+
+@app.get("/api/runs/{id}")
+async def get_run(id: str) -> dict:
+    store = _get_run_store()
+    try:
+        run_data = store.get(id)
+        return {"run": run_data}
+    finally:
+        store.close()
+
+@app.delete("/api/runs")
+async def clear_runs() -> dict:
+    store = _get_run_store()
+    try:
+        store.clear()
+        return {"ok": True}
+    finally:
+        store.close()
+
+@app.delete("/api/runs/{id}")
+async def delete_run(id: str) -> dict:
+    store = _get_run_store()
+    try:
+        deleted = store.delete(id)
+        return {"ok": deleted}
+    finally:
+        store.close()
 
 if __name__ == "__main__":
     import uvicorn

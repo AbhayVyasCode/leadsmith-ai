@@ -4,7 +4,6 @@ import { useMemo, useState, type KeyboardEvent } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ChevronDown, ChevronUp, ExternalLink, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 import type { Contact, EmailConfidence, Lead } from "@/lib/types";
@@ -13,22 +12,20 @@ import { ConfidenceMeter } from "@/components/app/confidence-meter";
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
-/** Variants for staggering table rows in — mirrors the shared Stagger helper. */
 const ROW_CONTAINER = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
+  show: { transition: { staggerChildren: 0.05 } },
 };
 const ROW_ITEM = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } },
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
 };
 
-type SortKey = "score" | "confidence" | "company";
-type SortDir = "asc" | "desc";
+export type SortKey = "score" | "confidence" | "company";
+export type SortDir = "asc" | "desc";
 
 type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>["variant"]>;
 
-/** Email-confidence badge variant + sentence-case label (paired, never color-only). */
 const EMAIL_CONFIDENCE: Record<
   EmailConfidence,
   { variant: BadgeVariant; label: string }
@@ -38,10 +35,9 @@ const EMAIL_CONFIDENCE: Record<
   unknown: { variant: "default", label: "Unknown" },
 };
 
-/** Flag badge variant + readable label. */
 const FLAG_META: Record<string, { variant: BadgeVariant; label: string }> = {
   "weak-evidence": { variant: "warning", label: "Weak evidence" },
-  "rejected-by-critic": { variant: "danger", label: "Rejected by critic" },
+  "rejected-by-critic": { variant: "danger", label: "Rejected" },
   "critic-failed": { variant: "warning", label: "Critic skipped" },
   "enrich-failed": { variant: "warning", label: "No contacts" },
   "outreach-failed": { variant: "warning", label: "Outreach skipped" },
@@ -59,16 +55,12 @@ function stripScheme(website: string): string {
   return website.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
-/** Compare two leads by the active sort key. */
 function compareLeads(a: Lead, b: Lead, key: SortKey): number {
-  if (key === "company") {
-    return a.company.name.localeCompare(b.company.name);
-  }
+  if (key === "company") return a.company.name.localeCompare(b.company.name);
   if (key === "confidence") return a.confidence - b.confidence;
   return a.overall_score - b.overall_score;
 }
 
-/** Invoke onSelect on Enter/Space from a button-like row. */
 function makeRowKeyHandler(onActivate: () => void) {
   return (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
@@ -80,14 +72,14 @@ function makeRowKeyHandler(onActivate: () => void) {
 
 function FlagBadges({ flags }: { flags: string[] }) {
   if (flags.length === 0) {
-    return <span className="text-sm text-muted-foreground">—</span>;
+    return <span className="text-[12px] text-muted-foreground/30">—</span>;
   }
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {flags.map((flag) => {
         const meta = flagMeta(flag);
         return (
-          <Badge key={flag} variant={meta.variant}>
+          <Badge key={flag} variant={meta.variant} className="text-[10px]">
             {meta.label}
           </Badge>
         );
@@ -98,29 +90,29 @@ function FlagBadges({ flags }: { flags: string[] }) {
 
 function ContactCell({ contact }: { contact: Contact | null }) {
   if (!contact) {
-    return <span className="text-sm text-muted-foreground">—</span>;
+    return <span className="text-[12px] text-muted-foreground/30">—</span>;
   }
   const conf = EMAIL_CONFIDENCE[contact.email_confidence];
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span className="truncate text-sm font-medium text-foreground">
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="truncate text-[13px] font-medium text-foreground/80">
         {contact.name}
       </span>
-      <span className="truncate text-xs text-muted-foreground">
+      <span className="truncate text-[11px] text-muted-foreground/40">
         {contact.role}
       </span>
       {contact.email ? (
         <span className="flex min-w-0 items-center gap-1.5">
-          <Mail aria-hidden className="size-3 shrink-0 text-muted-foreground" />
-          <span className="tnum truncate font-mono text-xs text-foreground">
+          <Mail aria-hidden className="size-3 shrink-0 text-muted-foreground/30" />
+          <span className="tnum truncate font-mono text-[11px] text-foreground/60">
             {contact.email}
           </span>
-          <Badge variant={conf.variant} className="shrink-0">
+          <Badge variant={conf.variant} className="shrink-0 text-[9px]">
             {conf.label}
           </Badge>
         </span>
       ) : (
-        <span className="text-xs text-muted-foreground">No email</span>
+        <span className="text-[11px] text-muted-foreground/30">No email</span>
       )}
     </div>
   );
@@ -146,8 +138,8 @@ function SortButton({
       onClick={onClick}
       aria-label={`Sort by ${label.toLowerCase()}`}
       className={cn(
-        "group inline-flex items-center gap-1 rounded-md text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        active && "text-foreground",
+        "group inline-flex items-center gap-1 rounded text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40 transition-colors hover:text-foreground/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        active && "text-foreground/70",
         align === "right" && "flex-row-reverse",
       )}
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
@@ -156,29 +148,28 @@ function SortButton({
       <Icon
         aria-hidden
         className={cn(
-          "size-3.5 transition-opacity",
-          active ? "opacity-100" : "opacity-0 group-hover:opacity-40",
+          "size-3 transition-opacity",
+          active ? "opacity-100" : "opacity-0 group-hover:opacity-30",
         )}
       />
     </button>
   );
 }
 
-/**
- * Results centerpiece: a sortable, keyboard-navigable leads table on desktop
- * (md+) that collapses to stacked cards on mobile. Rows behave like buttons —
- * click or Enter/Space selects a lead — and stagger in on mount.
- */
 export function LeadsTable({
   leads,
   onSelect,
+  sortKey,
+  sortDir,
+  onSortChange,
 }: {
   leads: Lead[];
   onSelect: (lead: Lead) => void;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSortChange: (key: SortKey, dir: SortDir) => void;
 }) {
   const reduced = useReducedMotion();
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const sorted = useMemo(() => {
     const next = [...leads];
@@ -191,23 +182,21 @@ export function LeadsTable({
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      onSortChange(key, sortDir === "asc" ? "desc" : "asc");
     } else {
-      setSortKey(key);
-      // Sensible defaults: text ascending, numbers descending (best first).
-      setSortDir(key === "company" ? "asc" : "desc");
+      onSortChange(key, key === "company" ? "asc" : "desc");
     }
   }
 
   return (
     <section aria-label="Discovered leads">
-      {/* Desktop: real table */}
-      <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface md:block">
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-xl border border-white/[0.06] md:block">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-[13px]">
             <thead className="sticky top-0 z-10">
-              <tr className="border-b border-border text-left">
-                <th scope="col" className="px-5 py-3.5 text-right">
+              <tr className="border-b border-white/[0.06] text-left">
+                <th scope="col" className="px-4 py-3 text-right">
                   <div className="flex justify-end">
                     <SortButton
                       label="Score"
@@ -218,10 +207,10 @@ export function LeadsTable({
                     />
                   </div>
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-right">
+                <th scope="col" className="px-4 py-3 text-right">
                   <div className="flex justify-end">
                     <SortButton
-                      label="Confidence"
+                      label="Conf"
                       align="right"
                       active={sortKey === "confidence"}
                       dir={sortDir}
@@ -229,7 +218,7 @@ export function LeadsTable({
                     />
                   </div>
                 </th>
-                <th scope="col" className="px-5 py-3.5">
+                <th scope="col" className="px-4 py-3">
                   <SortButton
                     label="Company"
                     active={sortKey === "company"}
@@ -239,19 +228,19 @@ export function LeadsTable({
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
+                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/30"
                 >
-                  Top contact
+                  Contact
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
+                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/30"
                 >
-                  Outreach angle
+                  Angle
                 </th>
                 <th
                   scope="col"
-                  className="px-5 py-3.5 text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50"
+                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/30"
                 >
                   Flags
                 </th>
@@ -273,22 +262,22 @@ export function LeadsTable({
                     aria-label={`Open ${lead.company.name}`}
                     onClick={() => onSelect(lead)}
                     onKeyDown={makeRowKeyHandler(() => onSelect(lead))}
-                    className="table-row-premium cursor-pointer align-top outline-none focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                    className="cursor-pointer border-b border-white/[0.03] align-top outline-none transition-colors duration-100 hover:bg-white/[0.02] focus-visible:bg-white/[0.03] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring last:border-b-0"
                   >
-                    <td className="px-5 py-4 text-right align-middle">
+                    <td className="px-4 py-3.5 text-right align-middle">
                       <div className="flex justify-end">
-                        <ScoreRing score={lead.overall_score} size={42} />
+                        <ScoreRing score={lead.overall_score} size={38} />
                       </div>
                     </td>
-                    <td className="px-5 py-4 align-middle">
+                    <td className="px-4 py-3.5 align-middle">
                       <ConfidenceMeter value={lead.confidence} />
                     </td>
-                    <td className="px-5 py-4 align-middle">
+                    <td className="px-4 py-3.5 align-middle">
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate font-semibold tracking-[-0.01em] text-foreground">
+                        <span className="truncate font-medium text-foreground/80">
                           {lead.company.name}
                         </span>
-                        <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                        <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground/40">
                           <ExternalLink
                             aria-hidden
                             className="size-3 shrink-0"
@@ -299,15 +288,15 @@ export function LeadsTable({
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 align-middle">
+                    <td className="px-4 py-3.5 align-middle">
                       <ContactCell contact={contact} />
                     </td>
-                    <td className="max-w-[18rem] px-5 py-4 align-middle">
-                      <span className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                    <td className="max-w-[16rem] px-4 py-3.5 align-middle">
+                      <span className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/50">
                         {lead.qualification.outreach_angle || "—"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 align-middle">
+                    <td className="px-4 py-3.5 align-middle">
                       <FlagBadges flags={lead.flags} />
                     </td>
                   </motion.tr>
@@ -318,30 +307,30 @@ export function LeadsTable({
         </div>
       </div>
 
-      {/* Mobile: stacked cards */}
-      <Stagger className="flex flex-col gap-3 md:hidden">
+      {/* Mobile cards */}
+      <Stagger className="flex flex-col gap-2 md:hidden">
         {sorted.map((lead) => {
           const contact = topContact(lead);
           return (
             <StaggerItem
               key={`${lead.company.name}-${lead.company.website}`}
-              y={8}
+              y={6}
             >
-              <Card
+              <div
                 role="button"
                 tabIndex={0}
                 aria-label={`Open ${lead.company.name}`}
                 onClick={() => onSelect(lead)}
                 onKeyDown={makeRowKeyHandler(() => onSelect(lead))}
-                className="cursor-pointer p-4 outline-none transition-all duration-200 hover:bg-muted/50 hover:shadow-md focus-visible:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="cursor-pointer rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 outline-none transition-all duration-150 hover:bg-white/[0.03] focus-visible:bg-white/[0.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <div className="flex items-start gap-3">
-                  <ScoreRing score={lead.overall_score} size={48} />
+                  <ScoreRing score={lead.overall_score} size={44} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate font-medium text-foreground">
+                    <span className="truncate text-[13px] font-medium text-foreground/80">
                       {lead.company.name}
                     </span>
-                    <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground/40">
                       <ExternalLink aria-hidden className="size-3 shrink-0" />
                       <span className="truncate">
                         {stripScheme(lead.company.website)}
@@ -350,37 +339,33 @@ export function LeadsTable({
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-col gap-1">
-                  <span className="text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                    Confidence
-                  </span>
+                <div className="mt-3">
                   <ConfidenceMeter value={lead.confidence} />
                 </div>
 
-                <div className="mt-3 border-t border-border pt-3">
-                  <span className="mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                    Top contact
-                  </span>
-                  <ContactCell contact={contact} />
-                </div>
+                {contact && (
+                  <div className="mt-3 border-t border-white/[0.04] pt-3">
+                    <ContactCell contact={contact} />
+                  </div>
+                )}
 
-                {lead.qualification.outreach_angle ? (
-                  <div className="mt-3 border-t border-border pt-3">
-                    <span className="mb-1 block text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                      Outreach angle
+                {lead.qualification.outreach_angle && (
+                  <div className="mt-3 border-t border-white/[0.04] pt-3">
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/30">
+                      Angle
                     </span>
-                    <span className="line-clamp-3 text-sm text-muted-foreground">
+                    <span className="line-clamp-2 text-[12px] text-muted-foreground/50">
                       {lead.qualification.outreach_angle}
                     </span>
                   </div>
-                ) : null}
+                )}
 
-                {lead.flags.length > 0 ? (
-                  <div className="mt-3 border-t border-border pt-3">
+                {lead.flags.length > 0 && (
+                  <div className="mt-3 border-t border-white/[0.04] pt-3">
                     <FlagBadges flags={lead.flags} />
                   </div>
-                ) : null}
-              </Card>
+                )}
+              </div>
             </StaggerItem>
           );
         })}

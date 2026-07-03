@@ -4,13 +4,11 @@ import * as React from "react";
 import {
   ArrowRight,
   CheckCircle2,
-  CircleDot,
   FileText,
   Loader2,
   Search,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_FLAGS, type RunFlags } from "@/lib/types";
@@ -58,12 +56,12 @@ const MODES: { value: "customer" | "product"; label: string; hint: string }[] =
   [
     {
       value: "customer",
-      label: "Target account search",
+      label: "Target search",
       hint: "Describe the companies you want",
     },
     {
       value: "product",
-      label: "Product-to-buyer search",
+      label: "Product search",
       hint: "Paste a product URL or describe an offer",
     },
   ];
@@ -106,7 +104,7 @@ function SettingSummary({
   activeToggles: number;
 }) {
   return (
-    <span className="tnum hidden font-mono text-xs text-muted-foreground sm:inline">
+    <span className="tnum hidden font-mono text-[11px] text-muted-foreground sm:inline">
       {flags.targetLeads} leads / min {flags.minScore}
       {activeToggles > 0 ? ` / ${activeToggles} checks` : ""}
     </span>
@@ -144,189 +142,145 @@ export function SearchPanel({ onRun, running, onCancel }: SearchPanelProps) {
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[26rem_minmax(0,1fr)] lg:items-stretch">
-      <aside className="grid gap-5">
-        <div className="overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.04] via-background to-accent-warm/[0.03] shadow-lg shadow-primary/[0.03]">
-          <div className="relative px-7 py-7 sm:px-8 sm:py-8">
-            {/* Decorative accent line — refined */}
-            <div className="absolute left-0 top-0 h-full w-[3px] rounded-full bg-gradient-to-b from-primary via-primary/50 to-accent-warm/30" />
+    <div className="mx-auto w-full max-w-4xl">
+      {/* Hero */}
+      <div className="mb-8 text-center">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/70">
+          Multi-agent engine
+        </p>
+        <h1 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground">
+          Build a pipeline from
+          <br />
+          plain English.
+        </h1>
+        <p className="mx-auto mt-4 max-w-[42ch] text-[15px] leading-[1.6] text-muted-foreground">
+          Describe a market, hiring trigger, or technology signal. Leadsmith
+          turns it into a ranked list you can inspect.
+        </p>
+      </div>
 
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary ring-1 ring-primary/10">
-              <Sparkles className="size-3.5" aria-hidden />
-              Discovery command
-            </div>
-            <h1 className="mt-6 text-balance font-display text-[clamp(1.85rem,3.4vw,2.85rem)] font-bold leading-[1.04] tracking-[-0.035em] text-foreground">
-              Build an account list from a buyer signal.
-            </h1>
-            <p className="mt-4 text-[0.9375rem] leading-[1.65] text-muted-foreground/70">
-              Describe a market, product, hiring trigger, technology clue, or
-              timing signal. Leadsmith turns it into a ranked list you can
-              inspect before outreach.
-            </p>
-          </div>
-        </div>
+      {/* Composer */}
+      <div className="overflow-hidden rounded-2xl premium-panel">
+        {/* Mode selector */}
+        <div className="flex items-center gap-2 border-b border-border px-6 py-3">
+          {MODES.map((m) => {
+            const active = effectiveMode === m.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setFlags((f) => ({ ...f, mode: m.value }))}
+                disabled={running}
+                aria-pressed={active}
+                title={m.hint}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium outline-none transition-all duration-150",
+                  active
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {m.label}
+              </button>
+            );
+          })}
 
-        <div className="overflow-hidden rounded-2xl border border-border/40 bg-surface/60 shadow-md">
-          <div className="border-b border-border/40 px-6 py-4">
-            <p className="text-sm font-bold tracking-[-0.01em] text-foreground">
-              Run sequence
-            </p>
-            <p className="mt-1 text-[13px] text-muted-foreground/60">
-              A compact view of what happens after submit.
-            </p>
-          </div>
-          <div className="px-6 pb-5 pt-4">
-            <div className="flex flex-col gap-2">
-              {WORKFLOW.map((step, index) => (
-                <div
-                  key={step.label}
-                  className="group flex items-start gap-4 rounded-xl border border-transparent p-3.5 transition-all duration-200 hover:border-primary/15 hover:bg-primary/[0.03]"
-                >
-                  <span className="tnum flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-mono text-xs font-bold text-primary transition-all duration-200 group-hover:bg-primary/15 group-hover:scale-105">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0 pt-0.5">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <step.icon className="size-4 text-primary/70" aria-hidden />
-                      {step.label}
-                    </p>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground/60">
-                      {step.body}
-                    </p>
+          <div className="flex-1" />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={running}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <SlidersHorizontal className="size-3.5" aria-hidden />
+                <span className="text-[12px]">Controls</span>
+                <SettingSummary flags={flags} activeToggles={activeToggles} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80">
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="flag-target" className="text-[13px]">
+                      Target qualified leads
+                    </Label>
+                    <span className="tnum font-mono text-[13px] text-foreground">
+                      {flags.targetLeads}
+                    </span>
                   </div>
+                  <Slider
+                    id="flag-target"
+                    value={[flags.targetLeads]}
+                    onValueChange={([v]) =>
+                      setFlags((f) => ({ ...f, targetLeads: v }))
+                    }
+                    min={1}
+                    max={8}
+                    step={1}
+                    aria-label="Number of qualified leads to find"
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </aside>
 
-      <div className="grid min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-surface/80 shadow-xl shadow-black/[0.03] backdrop-blur-sm lg:grid-rows-[auto_1fr_auto] dark:border-white/[0.06] dark:shadow-black/[0.15]">
-        <div className="border-b border-border bg-gradient-to-r from-primary/5 to-transparent px-6 py-4 sm:px-7">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold tracking-[-0.01em] text-foreground">
-                New research run
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Choose how Leadsmith should interpret your input.
-              </p>
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={running}
-                  className="gap-2"
-                >
-                  <SlidersHorizontal className="size-4" aria-hidden />
-                  Controls
-                  <SettingSummary flags={flags} activeToggles={activeToggles} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80">
-                <div className="flex flex-col gap-5">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <Label htmlFor="flag-target">
-                        Target qualified leads
-                      </Label>
-                      <span className="tnum font-mono text-sm text-foreground">
-                        {flags.targetLeads}
-                      </span>
-                    </div>
-                    <Slider
-                      id="flag-target"
-                      value={[flags.targetLeads]}
-                      onValueChange={([v]) =>
-                        setFlags((f) => ({ ...f, targetLeads: v }))
-                      }
-                      min={1}
-                      max={8}
-                      step={1}
-                      aria-label="Number of qualified leads to find"
-                    />
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="flag-min-score" className="text-[13px]">
+                      Minimum score
+                    </Label>
+                    <span className="tnum font-mono text-[13px] text-foreground">
+                      {flags.minScore}
+                    </span>
                   </div>
+                  <Slider
+                    id="flag-min-score"
+                    value={[flags.minScore]}
+                    onValueChange={([v]) =>
+                      setFlags((f) => ({ ...f, minScore: v }))
+                    }
+                    min={0}
+                    max={100}
+                    step={5}
+                    aria-label="Minimum qualifying score"
+                  />
+                </div>
 
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <Label htmlFor="flag-min-score">Minimum score</Label>
-                      <span className="tnum font-mono text-sm text-foreground">
-                        {flags.minScore}
-                      </span>
-                    </div>
-                    <Slider
-                      id="flag-min-score"
-                      value={[flags.minScore]}
-                      onValueChange={([v]) =>
-                        setFlags((f) => ({ ...f, minScore: v }))
-                      }
-                      min={0}
-                      max={100}
-                      step={5}
-                      aria-label="Minimum qualifying score"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4 border-t border-border pt-4">
-                    {TOGGLES.map(({ key, label, hint }) => (
-                      <div
-                        key={key}
-                        className="flex items-start justify-between gap-3"
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <Label
-                            htmlFor={`flag-${key}`}
-                            className="cursor-pointer"
-                          >
-                            {label}
-                          </Label>
-                          <span className="text-xs text-muted-foreground">
-                            {hint}
-                          </span>
-                        </div>
-                        <Switch
-                          id={`flag-${key}`}
-                          checked={flags[key]}
-                          onCheckedChange={(checked) =>
-                            setFlags((f) => ({ ...f, [key]: checked }))
-                          }
-                          aria-label={label}
-                        />
+                <div className="flex flex-col gap-4 border-t border-border pt-4">
+                  {TOGGLES.map(({ key, label, hint }) => (
+                    <div
+                      key={key}
+                      className="flex items-start justify-between gap-3"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <Label
+                          htmlFor={`flag-${key}`}
+                          className="cursor-pointer text-[13px]"
+                        >
+                          {label}
+                        </Label>
+                        <span className="text-[12px] text-muted-foreground">
+                          {hint}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <Switch
+                        id={`flag-${key}`}
+                        checked={flags[key]}
+                        onCheckedChange={(checked) =>
+                          setFlags((f) => ({ ...f, [key]: checked }))
+                        }
+                        aria-label={label}
+                      />
+                    </div>
+                  ))}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {MODES.map((m) => {
-              const active = effectiveMode === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setFlags((f) => ({ ...f, mode: m.value }))}
-                  disabled={running}
-                  aria-pressed={active}
-                  title={m.hint}
-                  className={cn(
-                    "inline-flex min-h-10 items-center rounded-lg px-5 text-sm font-semibold outline-none transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  {m.label}
-                </button>
-              );
-            })}
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
+        {/* Textarea */}
         <Label htmlFor="search-request" className="sr-only">
           Describe who you want to find
         </Label>
@@ -337,21 +291,26 @@ export function SearchPanel({ onRun, running, onCancel }: SearchPanelProps) {
             value={request}
             onChange={(e) => setRequest(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Example: B2B SaaS companies hiring their first RevOps lead"
-            className="min-h-56 resize-none border-0 bg-transparent px-6 py-7 text-lg leading-relaxed shadow-none placeholder:text-muted-foreground/50 focus-visible:border-0 focus-visible:outline-none"
+            placeholder="B2B SaaS companies hiring their first RevOps lead"
+            className="min-h-[220px] resize-none border-0 bg-transparent px-6 py-8 text-lg font-medium leading-[1.65] shadow-none placeholder:text-muted-foreground/50 focus-visible:border-0 focus-visible:outline-none"
             aria-describedby="search-hint"
           />
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-border/40 bg-gradient-to-r from-primary/[0.03] to-transparent px-6 py-4 sm:flex-row sm:items-center">
-          <p id="search-hint" className="text-[13px] leading-relaxed text-muted-foreground/70">
+        {/* Footer */}
+        <div className="flex items-center gap-4 border-t border-border bg-muted/30 px-6 py-3.5">
+          <p
+            id="search-hint"
+            className="flex-1 text-[12px] text-muted-foreground/60"
+          >
             {effectiveMode === "product"
-              ? "Leadsmith reads the offer first, then searches for companies likely to need it."
-              : "Leadsmith starts from your target-account description and builds the buyer profile."}
+              ? "Reads the offer first, then finds companies that need it."
+              : "Starts from your description and builds the buyer profile."}
           </p>
-          <div className="flex items-center gap-2.5 sm:ml-auto">
+
+          <div className="flex items-center gap-2">
             {running ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
+              <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
                 Cancel
               </Button>
             ) : null}
@@ -359,67 +318,83 @@ export function SearchPanel({ onRun, running, onCancel }: SearchPanelProps) {
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="min-w-[140px] bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-primary/30 hover:brightness-110"
+              className="gap-2"
               aria-busy={running}
             >
               {running ? (
                 <>
-                  <Loader2 className="animate-spin" aria-hidden />
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
                   Searching
                 </>
               ) : (
                 <>
-                  <Search aria-hidden />
+                  <Search className="size-4" aria-hidden />
                   Build pipeline
-                  <ArrowRight aria-hidden />
+                  <ArrowRight className="size-4" aria-hidden />
                 </>
               )}
             </Button>
           </div>
         </div>
+      </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-        <div className="px-6 py-5">
-          <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-            <div>
-              <p className="text-[0.625rem] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
-                Try a researched query
+      {/* Example queries */}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        {EXAMPLE_QUERIES.map((q) => (
+          <Button
+            key={q}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => applyExample(q)}
+            disabled={running}
+            className="h-auto whitespace-normal rounded-full py-1.5 text-[12px] font-normal text-muted-foreground transition-all duration-150 hover:text-foreground"
+          >
+            {q}
+          </Button>
+        ))}
+      </div>
+
+      {/* Workflow preview */}
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {WORKFLOW.map((step, index) => (
+          <div
+            key={step.label}
+            className="group flex items-start gap-3 rounded-xl border border-border bg-surface p-4 transition-all duration-200 hover:border-border hover:bg-muted/30"
+          >
+            <span className="tnum flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-mono text-[11px] font-bold text-primary">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+                <step.icon className="size-3.5 text-primary/70" aria-hidden />
+                {step.label}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {EXAMPLE_QUERIES.map((q) => (
-                  <Button
-                    key={q}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => applyExample(q)}
-                    disabled={running}
-                    className="h-auto max-w-full whitespace-normal rounded-full border-border/50 py-2 text-left font-normal text-muted-foreground/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/[0.04] hover:text-foreground"
-                  >
-                    {q}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-primary/10 bg-primary/[0.03] p-5">
-              <p className="text-[0.625rem] font-bold uppercase tracking-[0.12em] text-primary/80">
-                Output packet
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {step.body}
               </p>
-              <div className="mt-3 grid gap-2.5">
-                {OUTPUTS.map((item) => (
-                  <div key={item} className="flex items-start gap-2.5">
-                    <CheckCircle2
-                      className="mt-0.5 size-4 shrink-0 text-primary/70"
-                      aria-hidden
-                    />
-                    <p className="text-[13px] leading-relaxed text-foreground/70">
-                      {item}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* Output */}
+      <div className="mt-4 rounded-xl border border-primary/10 bg-primary-soft p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+          Output
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {OUTPUTS.map((item) => (
+            <div key={item} className="flex items-start gap-2">
+              <CheckCircle2
+                className="mt-0.5 size-3.5 shrink-0 text-primary/70"
+                aria-hidden
+              />
+              <p className="text-[13px] leading-relaxed text-foreground/70">
+                {item}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

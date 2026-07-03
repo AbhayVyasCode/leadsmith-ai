@@ -43,28 +43,46 @@ Rules:
 
 def _build_query(icp: ICP, wave: int = 0) -> str:
     """Build a search query. Successive waves rotate the keyword window so each
-    wave issues a DISTINCT query (different Tavily cache key) — otherwise a
-    repeated query returns the same cached results and the wave loop stalls."""
+    wave issues a DISTINCT query — otherwise a repeated query returns the same cached results."""
     kws = [k for k in icp.keywords if k]
-    picked: list[str] = []
+    
+    # Base query components
+    parts = []
+    
     if kws:
         n = len(kws)
-        offset = (wave * 2) % n
+        # Even with 1 or 2 keywords, ensure we pick a different slice or combination if possible.
+        # But if n is small, offset alone won't change the query much.
+        offset = wave % n
         rotated = kws[offset:] + kws[:offset]
-        picked = rotated[:3]
-    
-    # If the LLM generated keywords, rely on them. Appending verbose 
-    # industry/geography strings confuses the search engine.
-    if picked:
-        return " ".join(picked)
-        
-    # Fallback if no keywords were generated
-    parts = [icp.industry]
-    # Only append geography if it's concise and not "Global..."
-    if icp.geography and len(icp.geography) < 25 and "global" not in icp.geography.lower():
-        parts.append(icp.geography)
-    
-    return " ".join(p for p in parts if p).strip() or icp.industry
+        parts.extend(rotated[:3])
+    else:
+        parts.append(icp.industry)
+        if icp.geography and len(icp.geography) < 25 and "global" not in icp.geography.lower():
+            parts.append(icp.geography)
+
+    query = " ".join(p for p in parts if p).strip() or icp.industry
+
+    # To guarantee the query string changes and yields fresh results on successive waves,
+    # append a wave-specific modifier.
+    modifiers = [
+        "",
+        "companies",
+        "providers",
+        "services",
+        "list",
+        "top",
+        "businesses",
+        "agencies",
+        "firms",
+        "solutions"
+    ]
+    if wave > 0:
+        mod = modifiers[wave % len(modifiers)]
+        if mod:
+            query = f"{query} {mod}"
+
+    return query
 
 
 def _root_domain(url: str) -> str:

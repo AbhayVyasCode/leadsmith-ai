@@ -82,6 +82,27 @@ class VectorStore:
         results.sort(key=lambda r: r["score"], reverse=True)
         return results[:top_k]
 
+    def get_all(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT id, meta, text FROM vectors LIMIT ? OFFSET ?", (limit, offset)
+            ).fetchall()
+        return [
+            {"id": id_, "meta": json.loads(meta), "text": text}
+            for id_, meta, text in rows
+        ]
+
+    def delete(self, id: str) -> bool:
+        with self._lock:
+            cursor = self._conn.execute("DELETE FROM vectors WHERE id = ?", (id,))
+            self._conn.commit()
+            return cursor.rowcount > 0
+
+    def clear(self) -> None:
+        with self._lock:
+            self._conn.execute("DELETE FROM vectors")
+            self._conn.commit()
+
     def count(self) -> int:
         with self._lock:
             return self._conn.execute("SELECT COUNT(*) FROM vectors").fetchone()[0]

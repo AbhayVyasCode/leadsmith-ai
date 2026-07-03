@@ -2,143 +2,102 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import {
   AlertCircle,
+  ArrowRight,
+  Download,
+  Plus,
   RotateCcw,
   Search,
-  ShieldCheck,
   Target,
-  ArrowRight,
+  Zap,
 } from "lucide-react";
 import { useLeadsmithRun } from "@/hooks/use-leadsmith-run";
+import { leadsmith } from "@/lib/leadsmith-client";
 import { DEFAULT_FLAGS, type Lead, type RunFlags } from "@/lib/types";
 import { noLeadsReason } from "@/lib/utils";
 import { leadsToCsv, downloadCsv } from "@/lib/export";
 import { SearchPanel } from "@/components/app/search-panel";
-import { RunBar } from "@/components/app/run-bar";
 import { AgentPipeline } from "@/components/app/agent-pipeline";
 import { IcpPanel } from "@/components/app/icp-panel";
 import { ProductCard } from "@/components/app/product-card";
-import { LeadsTable } from "@/components/app/leads-table";
+import { QuickFilters } from "@/components/app/quick-filters";
+import { LeadsTable, type SortKey, type SortDir } from "@/components/app/leads-table";
 import { LeadDrawer } from "@/components/app/lead-drawer";
 import { MetricsBar } from "@/components/app/metrics-bar";
 import { EmptyNoResults } from "@/components/app/empty-states";
-import { SignalGrid } from "@/components/landing/signal-grid";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// React Flow (@xyflow/react) is heavy and only rendered on the "Agent trace"
-// tab — load it lazily so it stays out of the /app route bundle until opened.
-const TraceGraph = dynamic(
-  () => import("@/components/app/trace-graph").then((m) => m.TraceGraph),
-  { ssr: false, loading: () => <Skeleton className="h-[520px] w-full" /> },
-);
+
 
 function LeadsSkeleton() {
   return (
-    <div className="flex flex-col gap-3" aria-label="Loading leads" aria-busy>
+    <div className="flex flex-col gap-2" aria-label="Loading leads" aria-busy>
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 rounded-xl border border-border/40 bg-surface/40 p-4"
+          className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4"
         >
-          <Skeleton className="size-12 rounded-full" />
+          <Skeleton className="size-10 rounded-full" />
           <div className="flex flex-1 flex-col gap-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-64" />
+            <Skeleton className="h-3.5 w-36" />
+            <Skeleton className="h-3 w-52" />
           </div>
-          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-6 w-16 rounded-md" />
         </div>
       ))}
     </div>
   );
 }
 
-function WorkspaceHeader({
-  running,
-  done,
-  leadCount,
-}: {
-  running: boolean;
-  done: boolean;
-  leadCount: number;
-}) {
-  const stats = [
-    {
-      label: "Status",
-      value: running ? "Researching" : done ? "Complete" : "Ready",
-      icon: Search,
-      color: running
-        ? "text-primary"
-        : done
-          ? "text-success"
-          : "text-muted-foreground",
-    },
-    {
-      label: "Qualified leads",
-      value: String(leadCount),
-      icon: Target,
-      color: "text-primary",
-    },
-    {
-      label: "Evidence review",
-      value: "Visible",
-      icon: ShieldCheck,
-      color: "text-success",
-    },
-  ];
-
+function StatusPill({ running, done }: { running: boolean; done: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-background to-accent-warm/[0.03] shadow-lg shadow-primary/[0.03]">
-      <div className="relative px-7 py-7 sm:px-8 sm:py-8">
-        {/* Refined decorative accent line */}
-        <div className="absolute left-0 top-0 h-full w-[3px] rounded-full bg-gradient-to-b from-primary via-primary/50 to-accent-warm/30" />
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-end">
-          <div>
-            <p className="text-[0.625rem] font-bold uppercase tracking-[0.12em] text-primary/80">
-              Pipeline review
-            </p>
-            <h1 className="mt-3 text-balance font-display text-[clamp(1.85rem,3vw,2.6rem)] font-bold leading-[1.06] tracking-[-0.03em] text-foreground">
-              Inspect the companies that survived the run.
-            </h1>
-            <p className="mt-4 max-w-2xl text-[0.9375rem] leading-[1.65] text-muted-foreground/70">
-              Scores, contacts, critic notes, and outreach angles stay attached
-              to each account so the list is easier to trust and refine.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-border/40 bg-surface/60 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/15"
-              >
-                <div className="flex items-center gap-2">
-                  <stat.icon className={`size-3.5 ${stat.color}`} aria-hidden />
-                  <span className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted-foreground/50">
-                    {stat.label}
-                  </span>
-                </div>
-                <p className="mt-3 font-display text-xl font-bold tracking-[-0.02em] text-foreground/90">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+        running
+          ? "bg-primary/10 text-primary"
+          : done
+            ? "bg-success-soft text-success"
+            : "bg-muted text-muted-foreground/50",
+      )}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          running ? "bg-primary animate-pulse" : done ? "bg-success" : "bg-muted-foreground/30",
+        )}
+      />
+      {running ? "Researching" : done ? "Complete" : "Ready"}
+    </span>
   );
 }
 
-export default function WorkspacePage() {
+function WorkspaceContent() {
   const run = useLeadsmithRun();
+  const searchParams = useSearchParams();
   const [flags, setFlags] = React.useState<RunFlags>(DEFAULT_FLAGS);
   const [selected, setSelected] = React.useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [hydrating, setHydrating] = React.useState(false);
+
+  const [sortKey, setSortKey] = React.useState<SortKey>("score");
+  const [sortDir, setSortDir] = React.useState<SortDir>("desc");
+
+  React.useEffect(() => {
+    const runId = searchParams?.get("runId");
+    if (runId && run.status === "idle" && !hydrating) {
+      setHydrating(true);
+      leadsmith.getRun(runId).then((report) => {
+        if (report) {
+          run.loadRun(report);
+        }
+      }).catch(console.error).finally(() => setHydrating(false));
+    }
+  }, [searchParams, run.status, hydrating, run]);
 
   const handleRun = React.useCallback(
     (request: string, f: RunFlags) => {
@@ -162,72 +121,54 @@ export default function WorkspacePage() {
   const running = run.status === "running";
   const done = run.status === "done";
   const errored = run.status === "error";
-  const hasTrace = Boolean(flags.trace && run.report?.trace);
   const hasRail = Boolean(run.icp || run.product);
+
+  if (idle && hydrating) {
+    return (
+      <div className="flex min-h-[calc(100dvh-56px)] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm font-medium">Loading run...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (idle) {
     return (
-      <>
-        <section className="relative flex min-h-[calc(100dvh-60px)] items-center overflow-hidden">
-          <SignalGrid />
-          <div className="relative z-10 mx-auto w-full max-w-[1440px] px-5 py-10 sm:px-8 lg:py-12">
-            <SearchPanel
-              onRun={handleRun}
-              running={running}
-              onCancel={run.cancel}
-            />
-          </div>
-        </section>
-        <LeadDrawer
-          lead={selected}
-          open={drawerOpen}
-          onOpenChange={setDrawerOpen}
-        />
-      </>
+      <div className="flex min-h-[calc(100dvh-56px)] items-center justify-center px-4 py-12">
+        <SearchPanel onRun={handleRun} running={running} onCancel={run.cancel} />
+        <LeadDrawer lead={selected} open={drawerOpen} onOpenChange={setDrawerOpen} />
+      </div>
     );
   }
 
   const errorSection = errored ? (
     <div
       role="alert"
-      className="premium-panel flex flex-col gap-3 rounded-2xl p-5"
+      className="rounded-xl border border-danger/20 bg-danger-soft p-4"
     >
       <div className="flex items-center gap-2 text-danger">
         <AlertCircle className="size-4 shrink-0" aria-hidden />
-        <span className="text-sm font-medium">The research run stopped</span>
+        <span className="text-[13px] font-medium">The research run stopped</span>
       </div>
-      <p className="text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
         {run.error ??
-          "One of the agents could not finish. Retry the same request, or adjust the query if the target is too narrow."}
+          "One of the agents could not finish. Retry the same request, or adjust the query."}
       </p>
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => run.request && handleRun(run.request, flags)}
-          disabled={!run.request}
-        >
-          <RotateCcw aria-hidden />
-          Retry
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => run.request && handleRun(run.request, flags)}
+        disabled={!run.request}
+        className="mt-3 gap-1.5 text-[12px]"
+      >
+        <RotateCcw className="size-3.5" aria-hidden />
+        Retry
+      </Button>
     </div>
   ) : null;
-
-  const warningSection =
-    run.warnings.length > 0 ? (
-      <div
-        role="status"
-        className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-warning"
-      >
-        <AlertCircle className="size-4 shrink-0" aria-hidden />
-        <span>
-          {run.warnings.length} step{run.warnings.length > 1 ? "s" : ""} hit a
-          non-fatal issue — the affected leads were kept.
-        </span>
-      </div>
-    ) : null;
 
   const resultsSection = (
     <div className="flex min-w-0 flex-col gap-4">
@@ -235,56 +176,28 @@ export default function WorkspacePage() {
         <LeadsSkeleton />
       ) : run.leads.length > 0 ? (
         <>
-          {done && run.leads.length < flags.targetLeads ? (
-            <p className="text-sm text-muted-foreground">
-              Found{" "}
-              <span className="tnum font-mono text-foreground">
-                {run.leads.length}
-              </span>{" "}
-              of{" "}
-              <span className="tnum font-mono text-foreground">
-                {flags.targetLeads}
-              </span>{" "}
-              requested. Lower the score gate or broaden the request to surface
-              more candidates.
-            </p>
-          ) : done && run.leads.length > 0 ? (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Found{" "}
-                <span className="tnum font-mono text-foreground">
-                  {run.leads.length}
-                </span>{" "}
-                qualified leads. Click "Next" to find more.
+          {done && (
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[13px] text-muted-foreground">
+                <span className="tnum font-mono text-foreground">{run.leads.length}</span>
+                {" "}qualified lead{run.leads.length !== 1 ? "s" : ""}
               </p>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => run.continue && run.continue(flags)}
                 disabled={running}
-                aria-busy={running}
+                className="gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
               >
-                Next
-                <ArrowRight aria-hidden />
+                Find more
+                <ArrowRight className="size-3.5" aria-hidden />
               </Button>
             </div>
-          ) : null}
-          <Tabs defaultValue="leads" className="gap-4">
-            <TabsList>
-              <TabsTrigger value="leads">
-                Leads ({run.leads.length})
-              </TabsTrigger>
-              {hasTrace && <TabsTrigger value="trace">Agent trace</TabsTrigger>}
-            </TabsList>
-            <TabsContent value="leads">
-              <LeadsTable leads={run.leads} onSelect={openLead} />
-            </TabsContent>
-            {hasTrace && run.report?.trace && (
-              <TabsContent value="trace">
-                <TraceGraph trace={run.report.trace} />
-              </TabsContent>
-            )}
-          </Tabs>
+          )}
+          <div className="flex flex-col rounded-xl border border-border bg-surface overflow-hidden premium-panel shadow-sm">
+            <QuickFilters sortKey={sortKey} onSortChange={(k, d) => { setSortKey(k); setSortDir(d); }} />
+            <LeadsTable leads={run.leads} onSelect={openLead} sortKey={sortKey} sortDir={sortDir} onSortChange={(k, d) => { setSortKey(k); setSortDir(d); }} />
+          </div>
         </>
       ) : done && run.report ? (
         <EmptyNoResults
@@ -298,50 +211,92 @@ export default function WorkspacePage() {
   );
 
   const railSection = hasRail ? (
-    <aside className="flex flex-col gap-6 xl:sticky xl:top-28 xl:self-start">
-      {run.product && (
-        <Reveal>
-          <ProductCard product={run.product} />
-        </Reveal>
-      )}
-      {run.icp && (
-        <Reveal>
-          <IcpPanel icp={run.icp} />
-        </Reveal>
-      )}
-    </aside>
+    <div className="flex flex-col gap-4">
+      {run.product && <ProductCard product={run.product} />}
+      {run.icp && <IcpPanel icp={run.icp} />}
+    </div>
   ) : null;
-
-  const metricsSection =
-    done && run.report ? (
-      <MetricsBar
-        metrics={run.report.metrics}
-        durationSeconds={run.report.duration_seconds}
-      />
-    ) : null;
 
   return (
     <>
-      <RunBar
-        request={run.request}
-        status={run.status}
-        durationSeconds={run.report?.duration_seconds}
-        leadCount={run.leads.length}
-        canExport={run.leads.length > 0}
-        onNewSearch={run.reset}
-        onRerun={() => run.request && handleRun(run.request, flags)}
-        onExport={handleExport}
-        onCancel={run.cancel}
-      />
+      <div className="sticky top-[56px] z-[990] border-b border-border bg-surface shadow-sm">
+        <div className="mx-auto flex w-full max-w-[1400px] items-center gap-4 px-5 py-3 sm:px-6">
+          <StatusPill running={running} done={done} />
 
-      <div className="mx-auto w-full max-w-[1440px] px-5 py-6 sm:px-8 lg:py-8">
-        <div className="flex flex-col gap-6">
-          <WorkspaceHeader
-            running={running}
-            done={done}
-            leadCount={run.leads.length}
-          />
+          <div className="min-w-0 flex-1">
+            <p
+              className="truncate text-[13px] font-medium text-foreground"
+              title={run.request}
+            >
+              {run.request}
+            </p>
+          </div>
 
+          {done ? (
+            <span className="hidden items-center gap-2 text-[12px] text-muted-foreground md:flex">
+              <span className="tnum font-mono text-foreground">{run.leads.length}</span>
+              leads
+              {typeof run.report?.duration_seconds === "number" && (
+                <>
+                  <span className="text-border">/</span>
+                  <span className="tnum font-mono">{run.report.duration_seconds.toFixed(1)}s</span>
+                </>
+              )}
+            </span>
+          ) : null}
+
+          <div className="flex items-center gap-1.5">
+            {running ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={run.cancel}
+                className="gap-1.5 text-[12px] text-muted-foreground"
+              >
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => run.request && handleRun(run.request, flags)}
+                className="gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5" aria-hidden />
+                Re-run
+              </Button>
+            )}
+
+            {done && run.leads.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                className="gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+              >
+                <Download className="size-3.5" aria-hidden />
+                Export
+              </Button>
+            )}
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={run.reset}
+              className="gap-1.5"
+            >
+              <Plus className="size-3.5" aria-hidden />
+              <span className="hidden sm:inline">New</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto w-full max-w-[1400px] px-5 py-6 sm:px-6 lg:py-8">
+        <div className="flex flex-col gap-5">
           {errorSection}
 
           <AgentPipeline
@@ -349,29 +304,36 @@ export default function WorkspacePage() {
             activeCompany={run.activeCompany}
           />
 
-          {warningSection}
-
-          {/* Results + context rail */}
-          <div
-            className={cn(
-              "grid gap-5",
-              hasRail && "xl:grid-cols-[minmax(0,1fr)_22rem]",
-            )}
-          >
-            {resultsSection}
-
+          <div className="flex flex-col gap-5">
             {railSection}
+            {resultsSection}
           </div>
 
-          {metricsSection}
+          {done && run.report && (
+            <MetricsBar
+              metrics={run.report.metrics}
+              durationSeconds={run.report.duration_seconds}
+            />
+          )}
         </div>
       </div>
 
-      <LeadDrawer
-        lead={selected}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
+      <LeadDrawer lead={selected} open={drawerOpen} onOpenChange={setDrawerOpen} />
     </>
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex min-h-[calc(100dvh-56px)] items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-sm font-medium">Loading workspace...</span>
+        </div>
+      </div>
+    }>
+      <WorkspaceContent />
+    </React.Suspense>
   );
 }

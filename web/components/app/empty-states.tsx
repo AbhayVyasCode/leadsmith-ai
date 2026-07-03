@@ -6,11 +6,6 @@ import { BrandMark } from "@/components/brand";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { EXAMPLE_QUERIES } from "@/lib/mock-data";
 
-/**
- * First-run empty state for the app dashboard: nothing searched yet. Centres the
- * brand mark over a prompt and offers the canned example queries as one-tap
- * chips so a new user can start a run without typing.
- */
 export function EmptyInitial({ onPick }: { onPick: (q: string) => void }) {
   return (
     <section
@@ -18,27 +13,27 @@ export function EmptyInitial({ onPick }: { onPick: (q: string) => void }) {
       className="mx-auto flex w-full max-w-md flex-col items-center px-6 py-16 text-center"
     >
       <Reveal className="flex flex-col items-center">
-        <BrandMark className="size-12 opacity-60" />
+        <BrandMark className="size-10 opacity-40" />
         <h2
           id="empty-initial-heading"
-          className="mt-5 text-xl font-semibold tracking-tight text-foreground/90"
+          className="mt-5 text-lg font-medium text-foreground/70"
         >
           Describe your ideal customer
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-[13px] text-muted-foreground/40">
           Write it in plain English. The agents handle discovery, scoring, and
           outreach from there.
         </p>
       </Reveal>
 
-      <Stagger className="mt-7 flex flex-wrap items-center justify-center gap-2">
+      <Stagger className="mt-6 flex flex-wrap items-center justify-center gap-2">
         {EXAMPLE_QUERIES.map((query) => (
           <StaggerItem key={query}>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-auto whitespace-normal rounded-full border-border/50 py-1.5 text-left text-muted-foreground/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/[0.04] hover:text-foreground"
+              className="h-auto whitespace-normal rounded-full border-white/[0.06] py-1.5 text-left text-[12px] text-muted-foreground/40 transition-all duration-150 hover:border-primary/20 hover:bg-primary/[0.04] hover:text-foreground/70"
               onClick={() => onPick(query)}
             >
               {query}
@@ -50,7 +45,6 @@ export function EmptyInitial({ onPick }: { onPick: (q: string) => void }) {
   );
 }
 
-/** Headline + body copy for each backend `no_leads_reason`. */
 function noResultsCopy(
   reason: "no_candidates" | "all_known" | "below_gate" | "errors" | null,
   minScore: number,
@@ -71,26 +65,21 @@ function noResultsCopy(
     case "below_gate":
       return {
         heading: `Scanned ${found - skipped} new companies; none cleared the gate`,
-        body: `They were researched but scored below your gate of ${minScore}. Lower the score gate or broaden the request to surface more leads.`,
+        body: `They were researched but scored below your gate of ${minScore}. Lower the score gate or broaden the request.`,
       };
     case "errors":
       return {
         heading: `All ${found} companies failed to process`,
-        body: "The research agents could not finish processing the candidates. Retry the same request, or narrow the target if the run keeps failing.",
+        body: "The research agents could not finish processing. Retry the same request, or narrow the target.",
       };
     default:
       return {
         heading: "No leads to show",
-        body: "Adjust your request or the run flags and try the search again.",
+        body: "Adjust your request or the run flags and try again.",
       };
   }
 }
 
-/**
- * No-results empty state. The headline and body differ by the backend's
- * `no_leads_reason` so the user always sees a specific, actionable next step —
- * never a generic "no results" blame line (see DESIGN.md §5).
- */
 export function EmptyNoResults({
   reason,
   minScore,
@@ -107,15 +96,15 @@ export function EmptyNoResults({
   return (
     <Reveal className="mx-auto flex w-full max-w-md flex-col items-center px-6 py-16 text-center">
       <span
-        className="flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground/50"
+        className="flex size-10 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground/20"
         aria-hidden
       >
-        <SearchX className="size-6" />
+        <SearchX className="size-5" />
       </span>
-      <h2 className="mt-5 text-xl font-semibold tracking-tight text-foreground">
+      <h2 className="mt-4 text-lg font-medium text-foreground/70">
         {heading}
       </h2>
-      <p className="mt-2 text-sm text-muted-foreground">{body}</p>
+      <p className="mt-2 text-[13px] text-muted-foreground/40">{body}</p>
     </Reveal>
   );
 }

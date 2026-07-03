@@ -220,5 +220,11 @@ export function useLeadsmithRun() {
     [state.report],
   );
 
-  return { ...state, start, cancel, reset, continue: continueRun };
+  const loadRun = useCallback((report: RunReport) => {
+    abortRef.current?.abort();
+    dispatch({ kind: "start", request: report.request });
+    dispatch({ kind: "event", event: { type: "done", report } });
+  }, []);
+
+  return { ...state, start, cancel, reset, continue: continueRun, loadRun };
 }

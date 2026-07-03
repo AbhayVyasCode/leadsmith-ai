@@ -4,6 +4,8 @@ import type {
   RunEvent,
   RunFlags,
   RunReport,
+  RunSummary,
+  RunResponse,
 } from "@/lib/types";
 import {
   MOCK_ICP,
@@ -18,6 +20,21 @@ function looksLikeUrl(request: string): boolean {
   return /https?:\/\/\S+|\b[a-z0-9-]+\.(?:com|org|net|io|ai|co|dev|app|so|sh|tech|cloud)\b/i.test(
     request,
   );
+}
+
+export interface MemoryItem {
+  id: string;
+  meta: {
+    company: string;
+    website: string;
+    score: number;
+  };
+  text: string;
+}
+
+export interface MemoryResponse {
+  items: MemoryItem[];
+  total: number;
 }
 
 /**
@@ -36,6 +53,15 @@ export interface ILeadsmithClient {
     request: ContinueRequest,
     handlers: { onEvent: (e: RunEvent) => void; signal?: AbortSignal },
   ): Promise<RunReport>;
+
+  getMemory(limit?: number, offset?: number): Promise<MemoryResponse>;
+  deleteMemory(id: string): Promise<boolean>;
+  clearMemory(): Promise<boolean>;
+
+  getRuns(limit?: number, offset?: number): Promise<RunResponse>;
+  getRun(id: string): Promise<RunReport | null>;
+  deleteRun(id: string): Promise<boolean>;
+  clearRuns(): Promise<boolean>;
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -189,6 +215,7 @@ export class MockLeadsmithClient implements ILeadsmithClient {
     accepted.sort((a, b) => b.overall_score - a.overall_score);
 
     const report: RunReport = {
+      id: `run::${Date.now()}`,
       request,
       icp: MOCK_ICP,
       product: productMode ? MOCK_PRODUCT : null,
@@ -233,15 +260,28 @@ export class MockLeadsmithClient implements ILeadsmithClient {
     await sleep(200, signal);
     onEvent({ type: "phase", agent: "recall", status: "done", ms: 250 });
 
-    // Get additional mock leads not already in the previous report
-    const previousCompanyNames = new Set(
-      previousReport.leads.map((l) => l.company.name),
-    );
-    const additionalCandidates = MOCK_LEADS.filter(
-      (l) => !previousCompanyNames.has(l.company.name),
-    ).slice(0, Math.max(0, flags.targetLeads - previousReport.leads.length));
+    const additionalCandidates: Lead[] = [];
+    let mockIndex = previousReport.leads.length;
+    while (additionalCandidates.length < flags.targetLeads) {
+      const base = MOCK_LEADS[mockIndex % MOCK_LEADS.length];
+      const copyNum = Math.floor(mockIndex / MOCK_LEADS.length) + 1;
+      const clone = {
+        ...base,
+        company: {
+          ...base.company,
+          name: copyNum > 1 ? `${base.company.name} (Batch ${copyNum})` : base.company.name,
+          website: copyNum > 1 ? `${copyNum}-${base.company.website}` : base.company.website,
+        },
+      };
+      
+      // Only add if we haven't already included this exact name in a prior run
+      if (!previousCompanyNames.has(clone.company.name)) {
+        additionalCandidates.push(clone);
+      }
+      mockIndex++;
+    }
 
-    const accepted: Lead[] = [...previousReport.leads];
+    const accepted: Lead[] = [];
 
     for (const base of additionalCandidates) {
       onEvent({
@@ -337,6 +377,7 @@ export class MockLeadsmithClient implements ILeadsmithClient {
 
     const newReport: RunReport = {
       ...previousReport,
+      id: `run::${Date.now()}`,
       leads: accepted,
       candidates_found: found,
       candidates_skipped: skipped,
@@ -347,6 +388,76 @@ export class MockLeadsmithClient implements ILeadsmithClient {
     };
     onEvent({ type: "done", report: newReport });
     return newReport;
+  }
+
+  // Basic mock implementation for memory
+  private mockMemory: MemoryItem[] = MOCK_LEADS.map((l) => ({
+    id: `lead::${l.company.website}`,
+    meta: {
+      company: l.company.name,
+      website: l.company.website,
+      score: l.overall_score,
+    },
+    text: `${l.company.name} (${l.company.website}) — score ${l.overall_score}. Matched pains: n/a. Signals: n/a. Angle: mock`,
+  }));
+
+  async getMemory(limit = 100, offset = 0): Promise<MemoryResponse> {
+    await sleep(200);
+    return {
+      items: this.mockMemory.slice(offset, offset + limit),
+      total: this.mockMemory.length,
+    };
+  }
+
+  async deleteMemory(id: string): Promise<boolean> {
+    await sleep(200);
+    const prev = this.mockMemory.length;
+    this.mockMemory = this.mockMemory.filter((m) => m.id !== id);
+    return this.mockMemory.length < prev;
+  }
+
+  async clearMemory(): Promise<boolean> {
+    await sleep(200);
+    this.mockMemory = [];
+    return true;
+  }
+
+  // Mock implementation for runs
+  private mockRunHistory: RunReport[] = [];
+
+  async getRuns(limit = 50, offset = 0): Promise<RunResponse> {
+    await sleep(200);
+    const summaries: RunSummary[] = this.mockRunHistory.map(r => ({
+      id: r.id,
+      created_at: r.created_at,
+      request: r.request,
+      candidates_found: r.candidates_found,
+      leads_count: r.leads.length,
+      duration_seconds: r.duration_seconds
+    })).sort((a, b) => b.created_at - a.created_at);
+
+    return {
+      items: summaries.slice(offset, offset + limit),
+      total: summaries.length,
+    };
+  }
+
+  async getRun(id: string): Promise<RunReport | null> {
+    await sleep(200);
+    return this.mockRunHistory.find(r => r.id === id) || null;
+  }
+
+  async deleteRun(id: string): Promise<boolean> {
+    await sleep(200);
+    const prev = this.mockRunHistory.length;
+    this.mockRunHistory = this.mockRunHistory.filter(r => r.id !== id);
+    return this.mockRunHistory.length < prev;
+  }
+
+  async clearRuns(): Promise<boolean> {
+    await sleep(200);
+    this.mockRunHistory = [];
+    return true;
   }
 }
 
@@ -462,6 +573,9 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
           continue;
         }
         if (evt.type === "progress") continue;
+        if (evt.type === "error") {
+          throw new Error(evt.message as string);
+        }
         onEvent(evt as unknown as RunEvent);
         if (evt.type === "done") {
           finalReport = (evt as unknown as { report: RunReport }).report;
@@ -472,6 +586,56 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
     if (!finalReport)
       throw new Error("Stream ended before a final report arrived");
     return finalReport;
+  }
+
+  async getMemory(limit = 100, offset = 0): Promise<MemoryResponse> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory?limit=${limit}&offset=${offset}`);
+    if (!res.ok) throw new Error("Failed to fetch memory");
+    return res.json();
+  }
+
+  async deleteMemory(id: string): Promise<boolean> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete memory item");
+    const data = await res.json();
+    return data.ok;
+  }
+
+  async clearMemory(): Promise<boolean> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to clear memory");
+    const data = await res.json();
+    return data.ok;
+  }
+
+  async getRuns(limit = 50, offset = 0): Promise<RunResponse> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs?limit=${limit}&offset=${offset}`);
+    if (!res.ok) throw new Error("Failed to fetch runs");
+    return res.json();
+  }
+
+  async getRun(id: string): Promise<RunReport | null> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error("Failed to fetch run");
+    }
+    const data = await res.json();
+    return data.run;
+  }
+
+  async deleteRun(id: string): Promise<boolean> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete run");
+    const data = await res.json();
+    return data.ok;
+  }
+
+  async clearRuns(): Promise<boolean> {
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to clear runs");
+    const data = await res.json();
+    return data.ok;
   }
 }
 

@@ -117,6 +117,7 @@ export interface ProductProfile {
 }
 
 export interface RunReport {
+  id: string;
   request: string;
   icp: ICP;
   product: ProductProfile | null;
@@ -128,6 +129,20 @@ export interface RunReport {
   trace: TraceNode | null;
   duration_seconds: number;
   created_at: number;
+}
+
+export interface RunSummary {
+  id: string;
+  created_at: number;
+  request: string;
+  candidates_found: number;
+  leads_count: number;
+  duration_seconds: number;
+}
+
+export interface RunResponse {
+  items: RunSummary[];
+  total: number;
 }
 
 /* ---------- run configuration (mirrors CLI flags) ---------- */

@@ -317,12 +317,15 @@ class Orchestrator:
         request = previous_report.request
         icp = previous_report.icp
         product = previous_report.product
-        qualified = list(previous_report.leads)  # copy
+        qualified = []  # Do not copy previous leads, start fresh for new run
         discovered = previous_report.candidates_found
         known_skipped = previous_report.candidates_skipped
         total_scanned = previous_report.metrics.get("total_scanned", 0)
         wave = previous_report.metrics.get("waves", 0)
         seen_roots = set(previous_report.seen_roots)
+
+        start_scanned = previous_report.metrics.get("total_scanned", 0)
+        start_wave = previous_report.metrics.get("waves", 0)
 
         # Use new params or fall back to previous run's implied defaults
         # Note: we can't know the exact previous target_leads/cap/min_score,
@@ -347,12 +350,12 @@ class Orchestrator:
 
         while (
             len(qualified) < target_leads
-            and total_scanned < cap
-            and wave < self.cfg.max_waves
+            and (total_scanned - start_scanned) < cap
+            and (wave - start_wave) < self.cfg.max_waves
         ):
             remaining = target_leads - len(qualified)
             batch = math.ceil(remaining * self.cfg.overfetch_factor)
-            batch = min(batch, self.cfg.max_per_wave, cap - total_scanned)
+            batch = min(batch, self.cfg.max_per_wave, cap - (total_scanned - start_scanned))
             if batch <= 0:
                 break
 
@@ -570,6 +573,8 @@ class Orchestrator:
                 await self.memory.remember(lead)
             except Exception:
                 pass
+
+            on_progress(f"· {company.name}: finished")
 
             # Stream the finished lead so it appears as soon as it's accepted.
             on_event({"type": "lead", "lead": lead.model_dump()})
