@@ -138,6 +138,7 @@ export interface RunSummary {
   candidates_found: number;
   leads_count: number;
   duration_seconds: number;
+  total_scanned: number;
 }
 
 export interface RunResponse {

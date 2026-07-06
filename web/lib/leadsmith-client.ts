@@ -433,7 +433,8 @@ export class MockLeadsmithClient implements ILeadsmithClient {
       request: r.request,
       candidates_found: r.candidates_found,
       leads_count: r.leads.length,
-      duration_seconds: r.duration_seconds
+      duration_seconds: r.duration_seconds,
+      total_scanned: r.metrics?.total_scanned || r.candidates_found
     })).sort((a, b) => b.created_at - a.created_at);
 
     return {

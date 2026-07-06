@@ -10,7 +10,7 @@ import {
   ChevronsRight,
   Compass,
   History,
-  Settings,
+  LayoutDashboard,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export const APP_NAV: NavItem[] = [
   { label: "Discover", icon: Compass, href: "/app" },
   { label: "Memory", icon: Brain, href: "/app/memory" },
   { label: "Runs", icon: History, href: "/app/runs" },
-  { label: "Settings", icon: Settings, soon: true },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/app/dashboard" },
 ];
 
 function SidebarNavItem({

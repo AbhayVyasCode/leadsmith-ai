@@ -41,20 +41,29 @@ class RunStore:
     def get_summaries(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT id, timestamp, request, candidates, leads, duration FROM runs ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+                "SELECT id, timestamp, request, candidates, leads, duration, payload FROM runs ORDER BY timestamp DESC LIMIT ? OFFSET ?",
                 (limit, offset),
             ).fetchall()
             
-        return [
-            {
+        res = []
+        for r in rows:
+            total_scanned = r[3] # Fallback to candidates_found
+            if r[6]:
+                try:
+                    payload = json.loads(r[6])
+                    total_scanned = payload.get("metrics", {}).get("total_scanned", total_scanned)
+                except Exception:
+                    pass
+            res.append({
                 "id": r[0],
                 "created_at": r[1],
                 "request": r[2],
                 "candidates_found": r[3],
                 "leads_count": r[4],
-                "duration_seconds": r[5]
-            } for r in rows
-        ]
+                "duration_seconds": r[5],
+                "total_scanned": total_scanned
+            })
+        return res
 
     def get(self, run_id: str) -> Dict[str, Any] | None:
         with self._lock:
