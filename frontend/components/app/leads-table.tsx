@@ -33,6 +33,8 @@ const EMAIL_CONFIDENCE: Record<
   found: { variant: "success", label: "Found" },
   guessed: { variant: "warning", label: "Guessed" },
   unknown: { variant: "default", label: "Unknown" },
+  verified: { variant: "success", label: "Verify" },
+  verify: { variant: "success", label: "Verify" },
 };
 
 const FLAG_META: Record<string, { variant: BadgeVariant; label: string }> = {
@@ -107,9 +109,11 @@ function ContactCell({ contact }: { contact: Contact | null }) {
           <span className="tnum truncate font-mono text-[11px] text-foreground/60">
             {contact.email}
           </span>
-          <Badge variant={conf.variant} className="shrink-0 text-[9px]">
-            {conf.label}
-          </Badge>
+          {contact.email_confidence !== "guessed" && (
+            <Badge variant={conf.variant} className="shrink-0 text-[9px]">
+              {conf.label}
+            </Badge>
+          )}
         </span>
       ) : (
         <span className="text-[11px] text-muted-foreground/30">No email</span>

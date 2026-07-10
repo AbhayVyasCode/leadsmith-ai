@@ -34,16 +34,13 @@ export function SiteFooter() {
           </p>
           <div className="mt-1 flex items-center gap-3">
             {(["x", "linkedin", "github"] as const).map((n) => (
-              <a
+              <span
                 key={n}
-                href={siteConfig.social[n]}
-                target="_blank"
-                rel="noreferrer"
                 aria-label={`Leadsmith AI on ${n}`}
-                className="flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground"
               >
                 <SocialIcon name={n} />
-              </a>
+              </span>
             ))}
           </div>
         </div>

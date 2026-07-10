@@ -39,7 +39,7 @@ export interface Qualification {
   reasoning: string;
 }
 
-export type EmailConfidence = "found" | "guessed" | "unknown";
+export type EmailConfidence = "found" | "guessed" | "unknown" | "verified" | "verify";
 
 export interface Contact {
   name: string;
@@ -89,6 +89,7 @@ export interface RunMetrics {
   errors: number;
   total_tokens: number;
   estimated_cost_usd: number;
+  total_scanned?: number;
 }
 
 export interface TraceNode {

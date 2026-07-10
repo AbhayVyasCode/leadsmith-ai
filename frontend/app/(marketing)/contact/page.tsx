@@ -28,9 +28,9 @@ function XIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const SOCIAL = [
-  { label: "X (Twitter)", href: siteConfig.social.x, Icon: XIcon },
-  { label: "LinkedIn", href: siteConfig.social.linkedin, Icon: Linkedin },
-  { label: "GitHub", href: siteConfig.social.github, Icon: Github },
+  { label: "X (Twitter)", Icon: XIcon },
+  { label: "LinkedIn", Icon: Linkedin },
+  { label: "GitHub", Icon: Github },
 ] as const;
 
 export default function ContactPage() {
@@ -88,17 +88,14 @@ export default function ContactPage() {
                 Find us elsewhere
               </p>
               <ul className="mt-4 flex items-center gap-3">
-                {SOCIAL.map(({ label, href, Icon }) => (
+                {SOCIAL.map(({ label, Icon }) => (
                   <li key={label}>
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noreferrer noopener"
+                    <span
                       aria-label={label}
-                      className="flex size-11 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&_svg]:size-5"
+                      className="flex size-11 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground [&_svg]:size-5"
                     >
                       <Icon />
-                    </a>
+                    </span>
                   </li>
                 ))}
               </ul>

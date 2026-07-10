@@ -16,8 +16,10 @@ from __future__ import annotations
 import re
 
 from .base import BaseAgent
+from ..core.gemini import GeminiClient
 from ..models import ICP, Contact, ContactList
 from ..tools.dns_tools import domain_accepts_mail, infer_pattern, permute_email
+from ..tools.hunter import hunter_find_email, hunter_verify_email
 from ..tools.web_scrape import SiteContent
 
 _EXTRACT_PROMPT = """From the website text below, extract real named people who
@@ -57,6 +59,10 @@ def _merge_contacts(primary: list[Contact], extra: list[Contact]) -> list[Contac
 class EnricherAgent(BaseAgent):
     name = "enricher"
 
+    def __init__(self, gemini: GeminiClient, hunter_api_key: str | None = None) -> None:
+        super().__init__(gemini)
+        self.hunter_api_key = hunter_api_key
+
     async def run(
         self, icp: ICP, company_name: str, site: SiteContent
     ) -> list[Contact]:
@@ -95,6 +101,44 @@ class EnricherAgent(BaseAgent):
                         if guess:
                             c.email = guess
                             c.email_confidence = "guessed"
+
+        # Check Hunter.io for email finder & verification if key is set
+        if self.hunter_api_key and contacts:
+            cache = getattr(self.gemini, "_cache", None)
+            for c in contacts:
+                if c.email and c.email_confidence == "found":
+                    v_data = await hunter_verify_email(
+                        c.email, api_key=self.hunter_api_key, cache=cache
+                    )
+                    if v_data:
+                        if v_data.get("result") == "deliverable" or v_data.get("score", 0) >= 80:
+                            c.email_confidence = "verify"
+                elif not c.email:
+                    name_parts = c.name.split()
+                    if len(name_parts) >= 2:
+                        first_name = name_parts[0]
+                        last_name = name_parts[-1]
+                        find_data = await hunter_find_email(
+                            site.domain,
+                            first_name,
+                            last_name,
+                            api_key=self.hunter_api_key,
+                            cache=cache,
+                        )
+                        if find_data:
+                            email = find_data.get("email")
+                            if email:
+                                # Verify the found email
+                                v_data = await hunter_verify_email(
+                                    email, api_key=self.hunter_api_key, cache=cache
+                                )
+                                is_verified = False
+                                if v_data:
+                                    if v_data.get("result") == "deliverable" or v_data.get("score", 0) >= 80:
+                                        is_verified = True
+                                c.email = email
+                                c.email_confidence = "verify" if is_verified else "found"
+                                c.source = "hunter.io"
         return contacts
 
     async def _linkedin_people(

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
 
     data_dir: str = ".leadsmith_data"
     hunter_api_key: str | None = None
+    convex_url: str = Field(default="")
 
     def validated(self) -> "Settings":
         missing: list[str] = []

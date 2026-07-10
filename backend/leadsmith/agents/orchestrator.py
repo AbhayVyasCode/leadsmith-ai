@@ -115,7 +115,7 @@ class Orchestrator:
         self.intent = IntentAgent(self.gemini)
         self.discovery = DiscoveryAgent(self.gemini)
         self.qualifier = QualifierAgent(self.gemini)
-        self.enricher = EnricherAgent(self.gemini)
+        self.enricher = EnricherAgent(self.gemini, hunter_api_key=cfg.hunter_api_key)
         self.outreach = OutreachAgent(self.gemini)
         self.critic = CriticAgent(self.gemini)
         self.product_profile = ProductProfileAgent(self.gemini)

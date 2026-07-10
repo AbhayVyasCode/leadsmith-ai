@@ -1,8 +1,7 @@
-"""A small, dependency-light local vector store (the RAG substrate).
+"""A local SQLite vector database or ConvexDB vector search index.
 
-Vectors persist in SQLite as float32 blobs; similarity search is cosine over a
-NumPy matrix loaded on demand. No external vector DB needed — fully free and
-local, which is plenty for a single-user research memory.
+Supports NumPy cosine similarity queries locally and delegates to Convex's
+cloud vectorSearch index if CONVEX_URL is set.
 """
 
 from __future__ import annotations
@@ -11,22 +10,36 @@ import json
 import os
 import sqlite3
 import threading
-
 import numpy as np
 
 
 class VectorStore:
     def __init__(self, path: str) -> None:
-        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        self._lock = threading.Lock()
-        self._conn = sqlite3.connect(path, check_same_thread=False)
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS vectors ("
-            "id TEXT PRIMARY KEY, dim INTEGER, vec BLOB, meta TEXT, text TEXT)"
-        )
-        self._conn.commit()
+        from ..config import Settings
+
+        cfg = Settings()
+        self.convex_url = cfg.convex_url
+
+        if self.convex_url:
+            from convex import ConvexClient
+            self.client = ConvexClient(self.convex_url)
+        else:
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            self._lock = threading.Lock()
+            self._conn = sqlite3.connect(path, check_same_thread=False)
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS vectors ("
+                "id TEXT PRIMARY KEY, dim INTEGER, vec BLOB, meta TEXT, text TEXT)"
+            )
+            self._conn.commit()
 
     def has(self, id: str) -> bool:
+        if self.convex_url:
+            try:
+                return self.client.query("memory:has", {"id": id})
+            except Exception:
+                return False
+
         with self._lock:
             row = self._conn.execute(
                 "SELECT 1 FROM vectors WHERE id = ?", (id,)
@@ -34,6 +47,21 @@ class VectorStore:
         return row is not None
 
     def upsert(self, id: str, vector: list[float], meta: dict, text: str) -> None:
+        if self.convex_url:
+            try:
+                self.client.mutation(
+                    "memory:upsert",
+                    {
+                        "id": id,
+                        "vector": [float(x) for x in vector],
+                        "meta": meta,
+                        "text": text,
+                    },
+                )
+            except Exception:
+                pass
+            return
+
         arr = np.asarray(vector, dtype=np.float32)
         with self._lock:
             self._conn.execute(
@@ -46,6 +74,16 @@ class VectorStore:
     def query(
         self, vector: list[float], top_k: int = 5, min_score: float = 0.0
     ) -> list[dict]:
+        if self.convex_url:
+            try:
+                results = self.client.query(
+                    "memory:search",
+                    {"vector": [float(x) for x in vector], "limit": top_k},
+                )
+                return [r for r in results if r["score"] >= min_score]
+            except Exception:
+                return []
+
         with self._lock:
             rows = self._conn.execute(
                 "SELECT id, dim, vec, meta, text FROM vectors"
@@ -83,6 +121,14 @@ class VectorStore:
         return results[:top_k]
 
     def get_all(self, limit: int = 100, offset: int = 0) -> list[dict]:
+        if self.convex_url:
+            try:
+                return self.client.query(
+                    "memory:getAll", {"limit": limit, "offset": offset}
+                )
+            except Exception:
+                return []
+
         with self._lock:
             rows = self._conn.execute(
                 "SELECT id, meta, text FROM vectors LIMIT ? OFFSET ?", (limit, offset)
@@ -93,20 +139,42 @@ class VectorStore:
         ]
 
     def delete(self, id: str) -> bool:
+        if self.convex_url:
+            try:
+                return self.client.mutation("memory:deleteItem", {"id": id})
+            except Exception:
+                return False
+
         with self._lock:
             cursor = self._conn.execute("DELETE FROM vectors WHERE id = ?", (id,))
             self._conn.commit()
             return cursor.rowcount > 0
 
     def clear(self) -> None:
+        if self.convex_url:
+            try:
+                self.client.mutation("memory:clearAll")
+            except Exception:
+                pass
+            return
+
         with self._lock:
             self._conn.execute("DELETE FROM vectors")
             self._conn.commit()
 
     def count(self) -> int:
+        if self.convex_url:
+            try:
+                return self.client.query("memory:count")
+            except Exception:
+                return 0
+
         with self._lock:
             return self._conn.execute("SELECT COUNT(*) FROM vectors").fetchone()[0]
 
     def close(self) -> None:
-        with self._lock:
-            self._conn.close()
+        if self.convex_url:
+            pass
+        else:
+            with self._lock:
+                self._conn.close()

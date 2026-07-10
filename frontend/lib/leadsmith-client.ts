@@ -7,6 +7,7 @@ import type {
   RunSummary,
   RunResponse,
 } from "@/lib/types";
+import { ConvexClient } from "convex/browser";
 import {
   MOCK_ICP,
   MOCK_LEADS,
@@ -241,6 +242,7 @@ export class MockLeadsmithClient implements ILeadsmithClient {
   ): Promise<RunReport> {
     const { report: previousReport, flags } = request;
     const productMode = previousReport.product !== null;
+    const previousCompanyNames = new Set(previousReport.leads.map(l => l.company.name));
 
     // Simulate continuation - just add more mock leads
     onEvent({ type: "phase", agent: "intent", status: "running" });
@@ -468,7 +470,14 @@ export class MockLeadsmithClient implements ILeadsmithClient {
  * plus a final `done` event carrying the full RunReport — so the UI is identical.
  */
 export class HttpLeadsmithClient implements ILeadsmithClient {
-  constructor(private readonly base: string) {}
+  private convexClient: any = null;
+
+  constructor(private readonly base: string) {
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (convexUrl) {
+      this.convexClient = new ConvexClient(convexUrl);
+    }
+  }
 
   async run(
     request: string,
@@ -590,6 +599,11 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async getMemory(limit = 100, offset = 0): Promise<MemoryResponse> {
+    if (this.convexClient) {
+      const items = await this.convexClient.query("memory:getAll", { limit, offset });
+      const total = await this.convexClient.query("memory:count");
+      return { items, total };
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory?limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
       cache: "no-store",
     });
@@ -598,6 +612,9 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async deleteMemory(id: string): Promise<boolean> {
+    if (this.convexClient) {
+      return await this.convexClient.mutation("memory:deleteItem", { id });
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete memory item");
     const data = await res.json();
@@ -605,6 +622,10 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async clearMemory(): Promise<boolean> {
+    if (this.convexClient) {
+      await this.convexClient.mutation("memory:clearAll");
+      return true;
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to clear memory");
     const data = await res.json();
@@ -612,6 +633,11 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async getRuns(limit = 50, offset = 0): Promise<RunResponse> {
+    if (this.convexClient) {
+      const items = await this.convexClient.query("runs:getSummaries", { limit, offset });
+      const total = await this.convexClient.query("runs:count");
+      return { items, total };
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs?limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
       cache: "no-store",
     });
@@ -620,6 +646,10 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async getRun(id: string): Promise<RunReport | null> {
+    if (this.convexClient) {
+      const payload = await this.convexClient.query("runs:get", { id });
+      return payload ? JSON.parse(payload) : null;
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}?_t=${Date.now()}`, {
       cache: "no-store",
     });
@@ -632,6 +662,9 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async deleteRun(id: string): Promise<boolean> {
+    if (this.convexClient) {
+      return await this.convexClient.mutation("runs:deleteRun", { id });
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete run");
     const data = await res.json();
@@ -639,6 +672,10 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async clearRuns(): Promise<boolean> {
+    if (this.convexClient) {
+      await this.convexClient.mutation("runs:clearAll");
+      return true;
+    }
     const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to clear runs");
     const data = await res.json();
@@ -654,3 +691,5 @@ const API_BASE = process.env.NEXT_PUBLIC_LEADSMITH_API;
 export const leadsmith: ILeadsmithClient = API_BASE
   ? new HttpLeadsmithClient(API_BASE)
   : new MockLeadsmithClient();
+
+export type RunItem = RunSummary;

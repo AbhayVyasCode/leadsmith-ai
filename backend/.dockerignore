@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.leadsmith_data/
+.git/
+.gitignore
+.env
+Dockerfile
+.dockerignore
