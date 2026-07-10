@@ -13,7 +13,7 @@ export default defineSchema({
     embedding: v.array(v.float64()),
     meta: v.any(),
   })
-    .index("by_id", ["id"])
+    .index("by_doc_id", ["id"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 768, // Gemini embeddings are 768 dimensions
@@ -28,6 +28,6 @@ export default defineSchema({
     duration: v.number(),
     payload: v.string(), // serialized json RunReport
   })
-    .index("by_id", ["id"])
+    .index("by_run_id", ["id"])
     .index("by_timestamp", ["timestamp"]),
 });

@@ -14,7 +14,7 @@ export const save = mutation({
   handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("runs")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_run_id", (q: any) => q.eq("id", args.id))
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -74,7 +74,7 @@ export const get = query({
   handler: async (ctx: any, args: any) => {
     const record = await ctx.db
       .query("runs")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_run_id", (q: any) => q.eq("id", args.id))
       .unique();
     return record ? record.payload : null;
   },
@@ -85,7 +85,7 @@ export const deleteRun = mutation({
   handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("runs")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_run_id", (q: any) => q.eq("id", args.id))
       .unique();
     if (existing) {
       await ctx.db.delete(existing._id);

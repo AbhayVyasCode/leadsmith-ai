@@ -6,7 +6,7 @@ export const has = query({
   handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("memory")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_doc_id", (q: any) => q.eq("id", args.id))
       .unique();
     return existing !== null;
   },
@@ -22,7 +22,7 @@ export const upsert = mutation({
   handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("memory")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_doc_id", (q: any) => q.eq("id", args.id))
       .unique();
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -90,7 +90,7 @@ export const deleteItem = mutation({
   handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("memory")
-      .withIndex("by_id", (q: any) => q.eq("id", args.id))
+      .withIndex("by_doc_id", (q: any) => q.eq("id", args.id))
       .unique();
     if (existing) {
       await ctx.db.delete(existing._id);
