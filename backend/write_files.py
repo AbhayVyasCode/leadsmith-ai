@@ -1,7 +1,7 @@
 import os
 import json
 
-dir_path = r'D:/Personal/leadsmith/web/components/app'
+dir_path = r'D:/Personal/leadsmith/frontend/components/app'
 os.makedirs(dir_path, exist_ok=True)
 
 # Read content from JSON files

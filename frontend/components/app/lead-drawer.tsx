@@ -127,7 +127,7 @@ function ChipRow({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {items.map((item) => (
-        <Badge key={item} variant="outline" className="text-[10px]">
+        <Badge key={item} variant="outline" className="text-[10px] whitespace-normal h-auto py-1 text-left leading-normal">
           {item}
         </Badge>
       ))}
@@ -221,7 +221,7 @@ export function LeadDrawer({
               </a>
             </SheetHeader>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="w-full flex-1">
               <div className="flex flex-col gap-6 p-6">
                 {/* Score + confidence + flags */}
                 <section className="flex flex-col gap-3">

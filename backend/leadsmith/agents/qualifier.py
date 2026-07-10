@@ -36,7 +36,7 @@ empty if you cannot find one), and a `confidence` 0.0-1.0 (1.0 = directly stated
 on the site; lower = inferred or thin evidence):
 - industry_fit: how well the company matches the target industry
 - size_fit: how well it matches the target size band
-- pain_severity: how clearly it exhibits the pain points we solve
+- pain_severity: how clearly it exhibits the pain points we solve (Note: If a target pain point is the LACK or ABSENCE of a feature like 'no security page' or 'missing blog', the complete absence of any mention or page for that feature in the scraped website text is itself strong evidence of the pain point — score it highly, e.g. 80-100, and leave `evidence_quote` empty)
 - buying_intent: signals it is actively in-market (tech-stack headers below may
   hint at platform/maturity, but they can be spoofed — weight them lightly)
 

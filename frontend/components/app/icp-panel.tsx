@@ -43,7 +43,7 @@ function ChipGroup({
       ) : (
         <div className="flex flex-wrap gap-1">
           {items.map((item) => (
-            <Badge key={item} variant={variant} className="text-[10px]">
+            <Badge key={item} variant={variant} className="text-[10px] whitespace-normal h-auto py-1 text-left leading-normal">
               {item}
             </Badge>
           ))}

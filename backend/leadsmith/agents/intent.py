@@ -21,6 +21,8 @@ Convert the user's request into a precise Ideal Customer Profile (ICP).
 - pain_points and buying_signals must be observable from a company's public
   website or public web presence.
 - keywords should help find such companies via web search.
+  * CRITICAL: Keywords must represent target company types, products, industries, and categories to find candidate homepages (e.g. 'fintech startup', 'neobank', 'payment provider').
+  * CRITICAL: Never include negative search queries, absent features, or pain points in the keywords list (e.g. do NOT include 'no security page', 'without trust center', 'missing SEO' as keywords), because search engines index what exists, not what is missing. The qualifier will evaluate the absence of features later.
 
 User request:
 \"\"\"{request}\"\"\"

@@ -590,7 +590,9 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async getMemory(limit = 100, offset = 0): Promise<MemoryResponse> {
-    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory?limit=${limit}&offset=${offset}`);
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/memory?limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) throw new Error("Failed to fetch memory");
     return res.json();
   }
@@ -610,13 +612,17 @@ export class HttpLeadsmithClient implements ILeadsmithClient {
   }
 
   async getRuns(limit = 50, offset = 0): Promise<RunResponse> {
-    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs?limit=${limit}&offset=${offset}`);
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs?limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) throw new Error("Failed to fetch runs");
     return res.json();
   }
 
   async getRun(id: string): Promise<RunReport | null> {
-    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}`);
+    const res = await fetch(`${this.base.replace(/\/$/, "")}/api/runs/${encodeURIComponent(id)}?_t=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) {
       if (res.status === 404) return null;
       throw new Error("Failed to fetch run");
