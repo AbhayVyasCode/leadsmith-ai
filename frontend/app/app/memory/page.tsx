@@ -1,196 +1,207 @@
 "use client";
 
-import * as React from "react";
-import { Brain, Trash2, ExternalLink, Loader2, Sparkles } from "lucide-react";
-import { leadsmith, MemoryItem } from "@/lib/leadsmith-client";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ExternalLink, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { ArrowGlyph, Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/controls";
+import { ConfirmDialog } from "@/components/ui/overlays";
+import { ScoreRing } from "@/components/ui/score-ring";
+import { leadsmith, type MemoryItem } from "@/lib/leadsmith-client";
+import { hostOf, hrefOf } from "@/lib/utils";
 
-function ScoreRing({ score }: { score: number }) {
-  const isHigh = score >= 75;
-  const isMed = score >= 50 && score < 75;
-  
-  const ringColor = isHigh ? "text-success" : isMed ? "text-warning" : "text-muted-foreground";
-  const bgRingColor = isHigh ? "text-success-soft" : isMed ? "text-warning-soft" : "text-border";
-  
-  const offset = 100 - score;
-
-  return (
-    <div className="relative flex size-10 items-center justify-center shrink-0">
-      <svg className="absolute inset-0 size-10 -rotate-90" viewBox="0 0 36 36">
-        <circle
-          className={bgRingColor}
-          strokeWidth="3"
-          stroke="currentColor"
-          fill="transparent"
-          r="16"
-          cx="18"
-          cy="18"
-        />
-        <circle
-          className={ringColor}
-          strokeWidth="3"
-          strokeDasharray="100"
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          stroke="currentColor"
-          fill="transparent"
-          r="16"
-          cx="18"
-          cy="18"
-        />
-      </svg>
-      <span className="text-[12px] font-bold tnum">{score}</span>
-    </div>
-  );
+/** Stored summaries look like "… — score N. Matched pains: …. Signals: …. Angle: …" */
+function parseSummary(text: string) {
+  const pick = (label: string, next?: string) => {
+    const re = new RegExp(`${label}:\\s*(.*?)${next ? `\\.\\s*${next}:` : "$"}`, "s");
+    const value = text.match(re)?.[1]?.trim().replace(/\.$/, "");
+    return value && value !== "n/a" ? value : null;
+  };
+  return { pains: pick("Matched pains", "Signals"), signals: pick("Signals", "Angle"), angle: pick("Angle") };
 }
 
 export default function MemoryPage() {
-  const [items, setItems] = React.useState<MemoryItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [clearing, setClearing] = React.useState(false);
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [items, setItems] = useState<MemoryItem[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const fetchMemory = async () => {
+  useEffect(() => {
+    leadsmith
+      .getMemory(200)
+      .then((r) => {
+        setItems(r.items);
+        setTotal(r.total);
+      })
+      .catch(() => {
+        setError("Couldn’t load memory. Is the research engine running?");
+        setItems([]);
+      });
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (items ?? []).filter((m) => !q || m.meta.company.toLowerCase().includes(q) || m.text.toLowerCase().includes(q));
+  }, [items, query]);
+
+  const remove = async (item: MemoryItem) => {
+    const before = items;
+    setItems((list) => (list ?? []).filter((m) => m.id !== item.id));
+    setTotal((t) => Math.max(0, t - 1));
     try {
-      const res = await leadsmith.getMemory();
-      setItems(res.items);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      await leadsmith.deleteMemory(item.id);
+      toast.success(`${item.meta.company} forgotten — it can be researched again`);
+    } catch {
+      setItems(before);
+      toast.error("Couldn’t remove that memory");
     }
   };
 
-  React.useEffect(() => {
-    fetchMemory();
-  }, []);
-
-  const handleClear = async () => {
-    if (!window.confirm("Are you sure you want to clear all memory? This cannot be undone.")) return;
-    setClearing(true);
+  const clearAll = async () => {
     try {
       await leadsmith.clearMemory();
       setItems([]);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setClearing(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    try {
-      const ok = await leadsmith.deleteMemory(id);
-      if (ok) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setDeletingId(null);
+      setTotal(0);
+      toast.success("Memory cleared");
+    } catch {
+      toast.error("Couldn’t clear memory");
     }
   };
 
   return (
-    <main className="flex min-h-dvh flex-col p-6 lg:p-10">
-      <div className="mx-auto w-full max-w-7xl flex-1 flex flex-col gap-8">
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-primary">
-              <Brain className="size-5" />
-              <h1 className="text-display-md font-bold tracking-tight text-foreground">
-                Research Memory
-              </h1>
-            </div>
-            <p className="text-[14px] text-muted-foreground/80 max-w-xl">
-              This is the RAG (Retrieval-Augmented Generation) memory. Past research is stored here and recalled during future runs to calibrate the AI's scoring to your preferences.
-            </p>
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClear}
-            disabled={loading || clearing || items.length === 0}
-            className="shrink-0 text-danger hover:text-danger hover:bg-danger-soft border-danger-soft transition-colors"
-          >
-            {clearing ? <Loader2 className="size-4 animate-spin mr-2" /> : <Trash2 className="size-4 mr-2" />}
-            Clear Memory
-          </Button>
-        </header>
+    <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-10 lg:py-14">
+      <header>
+        <div>
+          <p className="eyebrow text-ink-3">Workspace</p>
+          <h1 className="mt-3 font-display text-[clamp(2.75rem,5.5vw,4.25rem)] leading-none tracking-[-0.02em] text-ink">
+            Memory <span className="font-mono text-xl text-ink-3 tnum">{items ? total : ""}</span>
+          </h1>
+          <p className="mt-4 max-w-[60ch] text-ink-2">
+            Every qualified company is remembered here. Future runs skip these companies and use them to calibrate new
+            scores. Remove one to let Leadsmith research it again.
+          </p>
+        </div>
+      </header>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 rounded-2xl shimmer-premium animate-pulse border border-border" />
+      {/* Fixed-height toolbar: the list never jumps when the data (and these controls) arrive. */}
+      <div className="mt-8 flex h-11 items-center gap-3">
+        {items && items.length > 6 ? (
+          <label className="flex h-full min-w-0 max-w-xl flex-1 items-center gap-3 rounded-full border border-line bg-panel px-5 focus-within:border-ember/50">
+            <Search className="size-4 shrink-0 text-ink-3" aria-hidden />
+            <span className="sr-only">Filter memory</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter by company or signal…"
+              className="h-full min-w-0 flex-1 bg-transparent text-[0.95rem] text-ink outline-none placeholder:text-ink-3"
+            />
+          </label>
+        ) : (
+          <p className="flex-1 text-[0.9rem] text-ink-3">
+            {items?.length ? `${total} ${total === 1 ? "company" : "companies"} remembered` : null}
+          </p>
+        )}
+        {items?.length ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfirmOpen(true)}
+            aria-label="Clear memory"
+            className="ml-auto shrink-0 text-bad hover:text-bad"
+          >
+            <Trash2 aria-hidden />
+            <span className="hidden sm:inline">Clear memory</span>
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="mt-4">
+        {items === null ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-60 rounded-[1.25rem]" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center gap-4 py-20">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50 border border-border">
-              <Sparkles className="size-8 text-muted-foreground/50" />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-foreground">Memory is empty</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-md">
-                Run a Discovery search to start building your research memory. Leads that pass the qualifier will automatically appear here.
-              </p>
-            </div>
+          <div className="card grid place-items-center px-6 py-16 text-center">
+            <p className="font-display text-[2rem] leading-tight text-ink">{error ? "Memory unavailable" : "Nothing remembered yet"}</p>
+            <p className="mt-3 max-w-[46ch] text-ink-2">
+              {error ?? "Qualified companies are saved here automatically after each run."}
+            </p>
+            <Link href="/app" className={`${buttonVariants()} mt-7`}>
+              Start a search
+              <ArrowGlyph />
+            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {items.map((item) => {
-              const domain = item.meta.website.replace(/^https?:\/\//, '').replace(/\/$/, '');
-              const isDeleting = deletingId === item.id;
-              
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((item) => {
+              const parsed = parseSummary(item.text);
               return (
-                <div
-                  key={item.id}
-                  className={`premium-panel overflow-hidden rounded-2xl flex flex-col transition-opacity ${isDeleting ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
-                >
-                  <div className="flex items-start justify-between gap-4 p-5 border-b border-border/50">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <h3 className="text-base font-semibold text-foreground truncate">
-                        {item.meta.company}
-                      </h3>
+                <li key={item.id} className="card flex flex-col p-5 transition-[border-color] hover:border-line-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-[1.6rem] leading-tight text-ink">{item.meta.company}</p>
                       <a
-                        href={item.meta.website.startsWith('http') ? item.meta.website : `https://${item.meta.website}`}
+                        href={hrefOf(item.meta.website)}
                         target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-primary transition-colors truncate"
+                        rel="noreferrer noopener"
+                        className="mt-1 inline-flex items-center gap-1 font-mono text-[0.75rem] text-ink-3 hover:text-ember-ink"
                       >
-                        {domain}
-                        <ExternalLink className="size-3" />
+                        {hostOf(item.meta.website)}
+                        <ExternalLink className="size-3" aria-hidden />
                       </a>
                     </div>
-                    <ScoreRing score={item.meta.score} />
+                    <ScoreRing score={item.meta.score} size={50} />
                   </div>
-                  
-                  <div className="p-5 flex-1 flex flex-col gap-4">
-                    <p className="text-[13px] leading-relaxed text-muted-foreground flex-1 line-clamp-4">
-                      {item.text}
-                    </p>
-                    
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={isDeleting}
-                        className="h-8 text-xs text-muted-foreground/60 hover:text-danger hover:bg-danger/10"
-                      >
-                        {isDeleting ? <Loader2 className="size-3 mr-2 animate-spin" /> : <Trash2 className="size-3 mr-2" />}
-                        Remove
-                      </Button>
-                    </div>
+                  <dl className="mt-5 grid grid-cols-1 flex-1 content-start gap-3 text-[0.86rem]">
+                    {parsed.angle ? (
+                      <div>
+                        <dt className="text-[0.74rem] text-ink-3">Angle</dt>
+                        <dd className="mt-0.5 leading-snug text-ink">{parsed.angle}</dd>
+                      </div>
+                    ) : null}
+                    {parsed.pains ? (
+                      <div>
+                        <dt className="text-[0.74rem] text-ink-3">Matched pains</dt>
+                        <dd className="mt-0.5 leading-snug text-ink-2">{parsed.pains}</dd>
+                      </div>
+                    ) : null}
+                    {parsed.signals ? (
+                      <div>
+                        <dt className="text-[0.74rem] text-ink-3">Signals</dt>
+                        <dd className="mt-0.5 leading-snug text-ink-2">{parsed.signals}</dd>
+                      </div>
+                    ) : null}
+                    {!parsed.angle && !parsed.pains && !parsed.signals ? <dd className="leading-snug text-ink-2">{item.text}</dd> : null}
+                  </dl>
+                  <div className="mt-5 flex justify-end border-t border-line pt-4">
+                    <button
+                      type="button"
+                      onClick={() => void remove(item)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8rem] text-ink-3 transition-colors hover:bg-bad/10 hover:text-bad"
+                    >
+                      <Trash2 className="size-3.5" aria-hidden />
+                      Forget
+                    </button>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </div>
-    </main>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Clear all memory?"
+        body="Leadsmith will forget every company it has qualified, so future runs may research them again. Saved runs are kept."
+        confirmLabel="Clear memory"
+        onConfirm={() => void clearAll()}
+      />
+    </div>
   );
 }

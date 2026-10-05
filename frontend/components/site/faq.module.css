@@ -1,0 +1,99 @@
+/* Native <details> accordion. `name="faq"` makes it exclusive (one open at
+   a time) with zero JS; ::details-content + interpolate-size animates the
+   height where supported, and simply snaps open elsewhere. */
+.list {
+  interpolate-size: allow-keywords;
+  border-top: 1px solid var(--line);
+}
+
+.item {
+  border-bottom: 1px solid var(--line);
+}
+
+.item::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 0.45s var(--ease-ember),
+    content-visibility 0.45s allow-discrete;
+}
+
+.item[open]::details-content {
+  block-size: auto;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.6rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.q {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  line-height: 1.15;
+  color: var(--ink);
+  transition: color 0.2s ease;
+}
+
+.summary:hover .q {
+  color: var(--ember-ink);
+}
+
+.icon {
+  position: relative;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  transition:
+    transform 0.4s var(--ease-ember),
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.icon::before,
+.icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.8rem;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--ink);
+  translate: -50% -50%;
+  transition: background-color 0.3s ease;
+}
+
+.icon::after {
+  rotate: 90deg;
+}
+
+.item[open] .icon {
+  transform: rotate(45deg);
+  background: var(--ember);
+  border-color: var(--ember);
+}
+
+.item[open] .icon::before,
+.item[open] .icon::after {
+  background: var(--on-ember);
+}
+
+.a {
+  max-width: 64ch;
+  padding: 0 3.5rem 1.8rem 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink-2);
+}

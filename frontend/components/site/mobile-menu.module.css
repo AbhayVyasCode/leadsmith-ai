@@ -1,0 +1,80 @@
+.menu {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: 0 clamp(1.25rem, 4vw, 2.5rem) 2rem;
+  background: var(--canvas);
+  color: var(--ink);
+  flex-direction: column;
+  gap: 1.5rem;
+  opacity: 0;
+  transform: translate3d(0, -10px, 0);
+  transition:
+    opacity 0.32s var(--ease-ember),
+    transform 0.32s var(--ease-ember),
+    overlay 0.32s allow-discrete,
+    display 0.32s allow-discrete;
+}
+
+.menu:popover-open {
+  display: flex;
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .menu:popover-open {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+.menu::backdrop {
+  background: transparent;
+}
+
+.link {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    opacity 0.45s var(--ease-ember),
+    transform 0.45s var(--ease-ember),
+    color 0.2s ease;
+  transition-delay: calc(var(--i) * 55ms + 90ms);
+}
+
+.link:hover {
+  color: var(--ember-ink);
+}
+
+.menu:popover-open .link {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .menu:popover-open .link {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+.cta {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-ember) 0.35s;
+}
+
+.menu:popover-open .cta {
+  opacity: 1;
+}
+
+@starting-style {
+  .menu:popover-open .cta {
+    opacity: 0;
+  }
+}

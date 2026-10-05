@@ -1,0 +1,96 @@
+.backdrop {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 560px;
+  z-index: -1;
+  background-image:
+    radial-gradient(60% 70% at 50% 0%, var(--glow), transparent 70%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 56px 56px, 56px 56px;
+  mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  pointer-events: none;
+}
+
+.card {
+  margin-top: 2.25rem;
+  overflow: hidden;
+  border-radius: 1.6rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--sh-float);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.card:focus-within {
+  border-color: color-mix(in oklab, var(--ember) 45%, var(--line));
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--ember) 12%, transparent),
+    var(--sh-float);
+}
+
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.mode:hover {
+  color: var(--ink);
+}
+
+.mode[aria-checked="true"] {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+.mode[aria-checked="true"] svg {
+  color: var(--ember-ink);
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 9rem;
+  max-height: 22rem;
+  field-sizing: content;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 1.4rem 1.5rem 0.4rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+  line-height: 1.45;
+  color: var(--ink);
+  outline: none;
+}
+
+.textarea::placeholder {
+  color: var(--ink-3);
+  opacity: 0.85;
+}
+
+.rise {
+  animation: rise 0.7s var(--ease-ember) both;
+}
+
+.rise:nth-of-type(2) {
+  animation-delay: 0.05s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}

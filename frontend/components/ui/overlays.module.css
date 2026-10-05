@@ -1,0 +1,153 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(15 14 13 / 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.overlay[data-state="open"] {
+  animation: fade-in 0.3s ease both;
+}
+
+.overlay[data-state="closed"] {
+  animation: fade-out 0.2s ease both;
+}
+
+/* ---------- side sheet ---------- */
+.sheet {
+  position: fixed;
+  z-index: 61;
+  inset: 0 0 0 auto;
+  width: min(600px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--sh-float);
+  outline: none;
+}
+
+.sheet[data-state="open"] {
+  animation: sheet-in 0.5s var(--ease-ember) both;
+}
+
+.sheet[data-state="closed"] {
+  animation: sheet-out 0.25s ease-in both;
+}
+
+@media (max-width: 640px) {
+  .sheet {
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 92dvh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+  .sheet[data-state="open"] {
+    animation-name: sheet-up;
+  }
+  .sheet[data-state="closed"] {
+    animation-name: sheet-down;
+  }
+}
+
+.close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: var(--ink-2);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.close:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+/* ---------- centered dialog ---------- */
+.dialog {
+  position: fixed;
+  z-index: 61;
+  left: 50%;
+  top: 50%;
+  width: min(460px, calc(100vw - 2rem));
+  translate: -50% -50%;
+  padding: 1.75rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--sh-float);
+}
+
+.dialog[data-state="open"] {
+  animation: pop-in 0.35s var(--ease-spring) both;
+}
+
+.dialog[data-state="closed"] {
+  animation: fade-out 0.15s ease both;
+}
+
+/* ---------- popover ---------- */
+.popover {
+  z-index: 62;
+  border-radius: 1.25rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--sh-float);
+  outline: none;
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+
+.popover[data-state="open"] {
+  animation: pop-in 0.3s var(--ease-spring) both;
+}
+
+.popover[data-state="closed"] {
+  animation: fade-out 0.15s ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+@keyframes sheet-down {
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}

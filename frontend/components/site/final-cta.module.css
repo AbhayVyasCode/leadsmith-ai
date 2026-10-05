@@ -1,0 +1,77 @@
+.forge {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(4.5rem, 10vw, 8rem) clamp(1.5rem, 5vw, 4rem);
+  border-radius: 2rem;
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+/* Molten glow rising from the bottom edge. */
+.heat {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -20%;
+  height: 70%;
+  z-index: -1;
+  background:
+    radial-gradient(60% 60% at 50% 70%, rgb(255 106 51 / 0.55), transparent 70%),
+    radial-gradient(30% 42% at 26% 78%, rgb(255 176 32 / 0.28), transparent 70%),
+    radial-gradient(30% 42% at 76% 78%, rgb(255 90 31 / 0.32), transparent 70%);
+  filter: blur(10px);
+  animation: breathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.06) translate3d(0, -2%, 0);
+    opacity: 1;
+  }
+}
+
+/* Covers the forge so the loop gate can tell when the sparks are on screen. */
+.sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sparks span {
+  position: absolute;
+  bottom: -8px;
+  left: var(--x);
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: #ffb020;
+  box-shadow: 0 0 8px 2px rgb(255 106 51 / 0.6);
+  opacity: 0;
+  animation: rise var(--dur) linear var(--delay) infinite;
+}
+
+@keyframes rise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift), -520px, 0) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparks {
+    display: none;
+  }
+}

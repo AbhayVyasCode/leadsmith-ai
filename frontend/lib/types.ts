@@ -90,6 +90,9 @@ export interface RunMetrics {
   total_tokens: number;
   estimated_cost_usd: number;
   total_scanned?: number;
+  waves?: number;
+  critic_failures?: number;
+  outreach_failures?: number;
 }
 
 export interface TraceNode {

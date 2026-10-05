@@ -1,0 +1,110 @@
+.item {
+  animation: arrive 0.6s var(--ease-ember) both;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.5fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  padding: 1.1rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--sh-card);
+  text-align: left;
+  transition:
+    border-color 0.25s ease,
+    transform 0.3s var(--ease-ember),
+    box-shadow 0.3s ease;
+}
+
+.row:hover {
+  border-color: color-mix(in oklab, var(--ember) 40%, var(--line));
+  transform: translateY(-1px);
+}
+
+.row:focus-visible {
+  outline-offset: 2px;
+}
+
+/* Freshly streamed leads flash ember once as they "land". */
+.item[data-fresh] .row {
+  animation: flash 1.6s ease-out both;
+}
+
+.main {
+  min-width: 0;
+}
+
+.contact {
+  min-width: 0;
+}
+
+.flags {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 12rem;
+}
+
+.chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--ink-3);
+  transition:
+    transform 0.25s var(--ease-ember),
+    color 0.2s ease;
+}
+
+.row:hover .chevron {
+  transform: translateX(3px);
+  color: var(--ink);
+}
+
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px dashed var(--line-2);
+  animation: arrive 0.5s var(--ease-ember) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.99);
+  }
+}
+
+@keyframes flash {
+  0% {
+    box-shadow:
+      0 0 0 1px var(--ember),
+      0 0 40px -8px var(--ember);
+  }
+  100% {
+    box-shadow: var(--sh-card);
+  }
+}
+
+@media (max-width: 1100px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .contact {
+    grid-column: 2 / 3;
+  }
+  .flags {
+    grid-column: 2 / 3;
+    justify-content: flex-start;
+    max-width: none;
+  }
+  .chevron {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}

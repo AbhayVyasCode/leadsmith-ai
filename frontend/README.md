@@ -1,84 +1,77 @@
 # Leadsmith — web
 
-The Next.js frontend for **Leadsmith**: a marketing landing page plus an interactive
-app dashboard for the multi-agent lead-discovery engine. Built to the contract in
-[`DESIGN.md`](./DESIGN.md) — refined-minimal (Linear/Vercel), dark-first, with a
-light theme, strong contrast, and GPU-only motion that respects
-`prefers-reduced-motion`.
+The Next.js frontend for **Leadsmith**. It has a marketing site and the `/app`
+workspace, where you describe a buyer, watch the agents research, and review
+leads with the evidence behind every score.
+
+The UI uses the **Ember** design system. Tokens, type, motion and accessibility
+rules are in [`DESIGN.md`](./DESIGN.md).
 
 ## Stack
 
-- **Next.js 15** (App Router) · **React 19** · **TypeScript** (strict)
-- **Tailwind CSS v4** with an OKLCH design-token system (`app/globals.css`)
-- **shadcn-style** primitives on **Radix** (`components/ui/*`)
-- **Motion** (`motion/react`) for animation · **Lenis** smooth scroll (landing only)
-- **React Flow** (`@xyflow/react`) for the agent trace graph
-- **next-themes** (dark default) · **lucide-react** icons · **sonner** toasts
+- **Next.js 16** (App Router, Turbopack) · **React 19** · **TypeScript** (strict)
+- **Tailwind CSS v4**: tokens in `app/globals.css`, plus CSS Modules for complex components
+- **next-themes** for light/dark/system · **Radix** (dialog and popover only) · **sonner** toasts · **lucide-react** icons
+- **convex** (optional): reads runs and memory from Convex when the backend writes there
+- Fonts: Instrument Serif, Instrument Sans and JetBrains Mono, all through `next/font`
 
-## Prerequisites
-
-[Bun](https://bun.com) (this project is managed with bun). Node 18+ also works if
-you swap the commands for `npm`/`pnpm`.
+There is no animation library. All motion is CSS (see `DESIGN.md` §4).
 
 ## Quickstart
+
+Requires [Bun](https://bun.com).
 
 ```bash
 bun install
 bun run dev          # http://localhost:3000
 ```
 
-Then open `/` for the landing page and `/app` for the workspace.
-
-### Scripts
+Open `/` for the site and `/app` for the workspace.
 
 | Script | What it does |
 |---|---|
 | `bun run dev` | Dev server |
-| `bun run build` | Production build |
-| `bun run start` | Serve the production build (`PORT=3210 bun run start` to change port) |
+| `bun run build` | Production build (every route prerenders as static) |
+| `bun run start` | Serve the production build |
 | `bun run typecheck` | `tsc --noEmit` |
 
-## How it connects to the backend
+## Environment (`.env.local`)
 
-The UI runs on **mock fixtures** with **simulated live agent streaming**, so it is
-fully demonstrable with no API key. Everything goes through one typed seam:
+| Variable | Effect |
+|---|---|
+| `NEXT_PUBLIC_LEADSMITH_API` | URL of the Python backend (`server.py`), e.g. `http://localhost:8000`. **Unset → demo mode:** runs use built-in sample data, and the workspace says so. |
+| `NEXT_PUBLIC_CONVEX_URL` | Optional. Set it only when the backend also writes to Convex. If set, runs and memory are read from Convex; otherwise they come from the backend API. |
 
-```
-lib/leadsmith-client.ts   →  ILeadsmithClient.run(request, flags, { onEvent, signal })
-```
+## How it talks to the engine
 
-`MockLeadsmithClient` emits the same `RunEvent` stream a real backend would. To wire
-the real Python engine (`leadsmith/pipeline.py`), implement `ILeadsmithClient` against
-an SSE/WebSocket endpoint and export it as `leadsmith` — **no UI changes required**.
-The domain types in `lib/types.ts` mirror the pydantic models in `leadsmith/models.py`
-exactly (including `candidates_found` / `candidates_skipped` and the three distinct
-empty-result reasons).
+Everything goes through one typed interface in `lib/leadsmith-client.ts`:
 
-## Project structure
+- `HttpLeadsmithClient` streams runs over server-sent events from
+  `POST /api/discover` and `POST /api/discover/continue` ("Find more").
+  It reads history and memory from `/api/runs` and `/api/memory` (or Convex) and
+  checks `/api/health` for the engine status card.
+- `MockLeadsmithClient` emits the same event stream from sample data. It powers demo mode.
+
+`hooks/use-leadsmith-run.ts` turns the event stream into UI state: status, pipeline
+steps, leads, warnings and the final report. Engine errors are shown with their real
+message.
+
+## Structure
 
 ```
 app/
-  globals.css            # OKLCH tokens (light + dark), reduced-motion, keyframes
-  layout.tsx             # fonts, ThemeProvider, skip-link, Toaster
-  page.tsx               # landing (Lenis-wrapped)
-  app/layout.tsx         # app shell: sidebar + header
-  app/page.tsx           # workspace: search → live agents → leads → trace → metrics
+  (site)/            # marketing: landing page (/) and /legal
+  app/               # workspace: Discover (/app), Runs, Memory
+  globals.css        # Ember tokens, base styles, CSS-first motion
+  layout.tsx         # fonts, theme provider, skip link, metadata
+  opengraph-image.tsx, icon.svg, robots.ts, sitemap.ts, not-found.tsx
 components/
-  ui/                    # primitives (button, card, dialog, sheet, slider, …)
-  motion/                # Reveal / Stagger / CountUp (reduced-motion aware)
-  landing/               # hero, signal-grid, features bento, how-it-works, faq, …
-  app/                   # search panel, agent pipeline, leads table, lead drawer,
-                         # trace graph (React Flow), metrics bar, command menu, …
-hooks/use-leadsmith-run.ts # run state machine over the streamed events
-lib/                     # types, mock-data, leadsmith-client (the swappable seam), utils
+  ui/                # primitives: button, badge, score ring, meter, sheet, dialog, …
+  site/              # marketing sections
+  app/               # workspace: shell, composer, pipeline, lead list/sheet, trace, …
+  brand/ theme/      # logo; theme provider and toggles
+hooks/               # run state machine
+lib/                 # engine client, types, CSV export, sample data, site config,
+                     # helpers (utils), class merging (cn), keyboard a11y (a11y)
+assets/fonts/        # Instrument Serif TTFs for the generated OG image (OFL)
 ```
-
-## Notes
-
-- **Accessibility:** WCAG-AA floor (AAA-leaning body text), visible focus rings,
-  44px targets, semantic HTML, `prefers-reduced-motion` honored globally, color is
-  never the only signal (scores always show the number).
-- **Theme:** dark by default; toggle in the nav/header. Both themes are
-  token-driven (no inversion hacks).
-- **Performance:** animations are limited to `transform`/`opacity`; the production
-  build prerenders both routes as static.

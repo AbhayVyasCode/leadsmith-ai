@@ -1,94 +1,64 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Instrument_Sans, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { site } from "@/lib/site";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { siteConfig } from "@/lib/site";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const serif = Instrument_Serif({
   subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--ff-serif",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = Instrument_Sans({
   subsets: ["latin"],
+  variable: "--ff-sans",
   display: "swap",
 });
 
-// Distinctive display face for headlines — characterful grotesque, paired with
-// Geist for body/UI and Geist Mono for data (per the frontend-design skill:
-// avoid generic system fonts; pair a distinctive display with a refined body).
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+const mono = JetBrains_Mono({
   subsets: ["latin"],
+  variable: "--ff-mono",
   display: "swap",
-  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name} — Find your next customers in plain English`,
-    template: `%s · ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  applicationName: siteConfig.name,
-  keywords: [
-    "lead generation",
-    "AI sales agent",
-    "B2B lead discovery",
-    "sales prospecting",
-    "ideal customer profile",
-    "multi-agent AI",
-    "Gemini",
-    "outbound sales",
-  ],
-  authors: [{ name: siteConfig.name }],
+  metadataBase: new URL(site.url),
+  title: { default: site.title, template: `%s · ${site.name}` },
+  description: site.description,
+  applicationName: site.name,
   openGraph: {
-    title: `${siteConfig.name} — Find your next customers in plain English`,
-    description: siteConfig.description,
-    url: siteConfig.url,
-    siteName: siteConfig.name,
     type: "website",
+    siteName: site.name,
+    title: site.title,
+    description: site.description,
+    url: site.url,
   },
-  twitter: {
-    card: "summary_large_image",
-    title: `${siteConfig.name} — Find your next customers in plain English`,
-    description: siteConfig.description,
-  },
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: ["/favicon.svg"],
-  },
+  twitter: { card: "summary_large_image", title: site.title, description: site.description },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f4ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0e0d" },
+  ],
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable}`}
+      className={`${serif.variable} ${sans.variable} ${mono.variable}`}
     >
-      <body className="min-h-dvh antialiased">
-        <a
-          href="#main"
-          className="sr-only z-[1090] rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
-        >
+      <body className="min-h-dvh">
+        <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
-          <Toaster />
         </ThemeProvider>
       </body>
     </html>

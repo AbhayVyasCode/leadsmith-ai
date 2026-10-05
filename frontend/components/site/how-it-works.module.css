@@ -1,0 +1,497 @@
+/* ---------------- card + stage ---------------- */
+.card {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--sh-card);
+  scroll-margin-top: 7rem;
+}
+
+.stage {
+  border-top: 1px solid var(--line);
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--ember) 7%, transparent), transparent 55%),
+    var(--panel-2);
+  padding: clamp(1.1rem, 3vw, 1.75rem);
+}
+
+.vis {
+  display: grid;
+  gap: 0.9rem;
+  font-size: 0.875rem;
+}
+
+.visHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------------- intent ---------------- */
+.brief {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.tag {
+  flex: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--panel-2);
+  color: var(--ink-3);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.turn {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 1rem;
+  color: var(--ember-ink);
+}
+
+.icp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.chip dt {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.chip dd {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ---------------- discover ---------------- */
+.results {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.result {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid transparent;
+  color: var(--ink-3);
+}
+
+.result .url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--ink-3) 60%, transparent);
+}
+
+.result .verdict {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+}
+
+.result[data-kept] {
+  border-color: color-mix(in oklab, var(--ok) 30%, transparent);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.result[data-kept] .url {
+  text-decoration: none;
+}
+
+.result[data-kept] .verdict {
+  color: var(--ok);
+  font-weight: 500;
+}
+
+/* ---------------- qualify ---------------- */
+.scoreHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.company {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.host {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+
+.overall {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.overallNum {
+  --num: var(--to);
+  counter-reset: n var(--num);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--ok);
+}
+
+.overallNum::after {
+  content: counter(n);
+}
+
+.overallLabel {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.dims {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.dimTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+}
+
+.dimVal {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+
+.dimVal small {
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+
+.bar {
+  margin-top: 0.4rem;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--ember) 70%, var(--ok)), var(--ok));
+  transform-origin: left;
+  transform: scaleX(calc(var(--v) / 100));
+}
+
+.quote {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-left: 2px solid var(--ember);
+  border-radius: 0 0.9rem 0.9rem 0;
+  background: var(--panel);
+}
+
+.quote p {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.quote footer {
+  margin-top: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--ok);
+}
+
+/* ---------------- critic ---------------- */
+.criticHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.verdictWeak {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--warn) 15%, transparent);
+  color: var(--warn);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.penalty {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--bad);
+}
+
+.criticQuote {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.missing {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.missing li {
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px dashed var(--line-2);
+  color: var(--ink-2);
+  font-size: 0.82rem;
+}
+
+.kept {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+/* ---------------- enrich ---------------- */
+.people {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.person {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-2);
+}
+
+.personMain {
+  display: grid;
+  min-width: 0;
+}
+
+.personName {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.personRole {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.personEmail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--ink-2);
+}
+
+.label {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.label[data-kind="found"] {
+  background: color-mix(in oklab, var(--ok) 13%, transparent);
+  color: var(--ok);
+}
+
+.label[data-kind="guessed"] {
+  background: color-mix(in oklab, var(--warn) 15%, transparent);
+  color: var(--warn);
+}
+
+.label[data-kind="unknown"] {
+  background: var(--panel-2);
+  color: var(--ink-3);
+}
+
+/* ---------------- draft ---------------- */
+.mail {
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.mailRow {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.mailRow span {
+  width: 3.6rem;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-top: 0.15rem;
+}
+
+.mailBody {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.grounded {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--ember-ink);
+}
+
+/* ---------------- scroll-driven reveals (progressive enhancement) ---------------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .chip,
+    .result,
+    .dim,
+    .person,
+    .missing li,
+    .mailBody p {
+      animation: enter linear both;
+      animation-timeline: view();
+      animation-range: entry calc(4% + var(--i, 0) * 5%) cover calc(22% + var(--i, 0) * 5%);
+    }
+    .bar > span {
+      animation: grow linear both;
+      animation-timeline: view();
+      animation-range: entry 15% cover 40%;
+    }
+    .overallNum {
+      animation: count linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
+    .quote,
+    .criticQuote {
+      animation: enter linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 30%;
+    }
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes count {
+  from {
+    --num: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .person {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .label {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .result {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}

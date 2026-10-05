@@ -1,0 +1,27 @@
+/* The glass layer lives on ::before so the scroll-driven animation only has
+   to fade OPACITY (compositor-only) — backdrop-filter itself never animates.
+   Without scroll-timeline support the layer is simply always visible. */
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: color-mix(in oklab, var(--canvas) 82%, transparent);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+}
+
+@supports (animation-timeline: scroll()) {
+  .header::before {
+    animation: glass-in linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 140px;
+  }
+}
+
+@keyframes glass-in {
+  from {
+    opacity: 0;
+  }
+}
