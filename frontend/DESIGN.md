@@ -76,11 +76,25 @@ The goal is a highly animated feel at near-zero JavaScript cost.
 - **Easing:** `--ease-ember` `cubic-bezier(.2,.8,.2,1)` for entrances, `--ease-spring`
   `cubic-bezier(.34,1.4,.64,1)` for small pops. These are defined on `:root`, not in `@theme`, so CSS modules can read them.
 - **Reduced motion:** a global rule cuts all animations and transitions to 0.01ms. The
-  forge console and the ember particles also switch themselves off.
+  hero's demo loop doesn't start; it shows its first scene, complete.
 - **Off-screen loops pause.** Mark a decorative infinite animation's container with `data-loop`.
   `LoopGate` (`components/site/loop-gate.tsx`) sets `data-offscreen` when it leaves the viewport,
   and a rule in `globals.css` pauses everything inside, so the page can go idle. Without JS, loops
   simply keep running. A `data-loop` element needs a real box (not zero-height) to be observed.
+- **Hero demo (`hero.tsx` + `hero-demo.tsx`).** The brief bar is a real GET form to `/app?brief=…`, which
+  pre-fills and focuses the composer. A small client controller types example briefs and only flips
+  `data-phase` (`typing → researching → dealt → out`) and `data-active` on a scene. CSS does every effect:
+  the cards deal in, rings sweep, quotes highlight, badges pop, and a conic beam travels round the bar.
+  The cards and skeletons share one grid cell, so the loop never shifts layout (CLS 0). The loop pauses
+  off-screen, in background tabs and while the visitor types.
+- **"The problem" scan (`comparison.tsx` + `comparison.module.css`).** A named `view-timeline` (`--scan`) on the
+  section's track drives everything with 0 KB of JavaScript. On wide screens (≥1280×700) the table pins while the
+  logo rides a rail down the Leadsmith column, proving each row (verdicts pop, ✓ draws, the counter steps), then
+  docks into the column header. Elsewhere the rows prove themselves as the table scrolls past. One progress map
+  serves both layouts: each element sets `--a`/`--b` fractions, and `--rn`/`--s`/`--l` choose the range. Base styles
+  are the finished table, so browsers without scroll timelines and reduced-motion visitors see it complete.
+- **Scroll timelines respect `scroll-padding`.** The page's `scroll-padding-top` (88px for the fixed header) insets
+  every view timeline, so ranges start as an element reaches the header, not the viewport edge.
 - **CSS Modules gotcha:** `@keyframes` inside a module are scoped to that module. Define them in the module that uses them, or use the global ones in `globals.css`.
 
 ## 5. Components
@@ -88,9 +102,9 @@ The goal is a highly animated feel at near-zero JavaScript cost.
 | Layer | Path | Contents |
 |---|---|---|
 | Primitives | `components/ui/` | `Button` (primary · secondary · ink · ghost), `Badge`, `ScoreRing`, `ConfidenceMeter`, `EmailLabel`, `Switch` and `Range` (native inputs), `Skeleton`, `Sheet`, `ConfirmDialog`, `Popover`, `Toaster` |
-| Brand | `components/brand/` | `LogoMark` (lead ingot and spark), `Logo` |
+| Brand | `components/brand/` | `LogoMark` (a research agent inside a magnifier: light and dark artwork, swapped by the theme in CSS), `Logo` |
 | Theme | `components/theme/` | `ThemeProvider`, `ThemeToggle` (icon swap via `dark:`, no mount flash), `ThemeSwitch` (3-way) |
-| Marketing | `components/site/` | Header (glass on scroll), mobile menu (native Popover API), hero and forge console, briefs marquee, comparison, how-it-works, features bento, showcase, use cases, principles, FAQ (native `<details>`), final CTA, footer |
+| Marketing | `components/site/` | Header (glass on scroll), mobile menu (native Popover API), hero (brief bar with a live demo), briefs marquee, comparison, how-it-works, features bento, showcase, FAQ (native `<details>`), final CTA, footer |
 | Workspace | `components/app/` | App shell, engine status, composer, run settings, run header, pipeline, lead list, lead sheet, run aside, trace view, empty and error states |
 
 Radix is used only for dialog and popover, where focus management is hard to do well by hand.
@@ -100,7 +114,7 @@ Everything else is native HTML: `<details>`, `popover`, `input[type=range]`, and
 
 | Route | Purpose |
 |---|---|
-| `/` | Landing page: hero → marquee → comparison → how it works → features → showcase → use cases → principles → FAQ → CTA |
+| `/` | Landing page: hero → marquee → comparison → how it works → features → showcase → FAQ → CTA |
 | `/legal` | Privacy and terms, stating which providers see what data |
 | `/app` | Discover: compose a brief, watch the run, review and export leads |
 | `/app/runs` | Saved runs: open, filter, delete |
@@ -109,12 +123,15 @@ Everything else is native HTML: `<details>`, `popover`, `input[type=range]`, and
 
 ## 7. Performance rules
 
-- Server components by default. On the marketing site, only small islands run on the client: the theme toggle, mobile menu, forge console, step index, use-case tabs and the cursor spotlight. The `/app` workspace is client-rendered because it streams live runs.
+- Server components by default. On the marketing site, only small islands run on the client: the theme toggle, mobile menu, hero demo, step index and the cursor spotlight. The `/app` workspace is client-rendered because it streams live runs.
 - **Layout safety:** every grid gets a mobile column template (`grid-cols-1`, which is `minmax(0,1fr)`), so
   long or `nowrap` content can't widen the page. Every route is checked for horizontal overflow at 320px and 390px.
 - **No layout shift on load:** data-driven pages reserve their stats and toolbar slots while loading.
 - No motion, smooth-scroll or graph libraries. Animation is CSS, so the landing page ships almost no JavaScript beyond Next's runtime.
-- The site uses no photographs. Visuals are CSS, SVG and type, so there's nothing to lazy-load or decode. The Open Graph image is generated at build time (`app/opengraph-image.tsx`).
+- The only raster images are the logo marks (`components/brand/mark-*.webp`, about 13 KB each). They swap with the
+  theme in CSS, so only the visible one downloads. Everything else is CSS, SVG and type. The favicon set
+  (`app/favicon.ico`, `icon.png`, `apple-icon.png`) uses the dark mark. The Open Graph image is generated at build
+  time (`app/opengraph-image.tsx`).
 - Fonts go through `next/font` with `display: swap` and are subset to Latin.
 - **`cn` vs `clsx`:** `cn` (`lib/cn.ts`) runs tailwind-merge. Use it only in components that
   take a `className` override. Marketing client islands, and anything they import, use plain
@@ -132,7 +149,7 @@ Everything else is native HTML: `<details>`, `popover`, `input[type=range]`, and
 - Targets meet WCAG 2.2's 24px minimum. On touch screens (`pointer-coarse`), compact
   buttons grow to 40px. On phones the lead sheet becomes a bottom sheet.
 - Keyboard: Ctrl/⌘ + Enter submits a brief. Radiogroups (`radioGroupKeys` in `lib/a11y.ts`)
-  and the use-case tabs move with arrow keys. Radix handles focus inside dialogs.
+  move with arrow keys. Radix handles focus inside dialogs.
 
 ## 9. Voice
 

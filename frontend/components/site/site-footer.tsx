@@ -8,7 +8,7 @@ export function SiteFooter() {
     <footer className="relative overflow-hidden border-t border-line">
       <div className="wrapper grid grid-cols-2 gap-x-6 gap-y-12 pb-12 pt-20 md:grid-cols-12">
         <div className="col-span-2 md:col-span-6">
-          <div className="flex items-center gap-2 text-ink">
+          <div className="flex items-center gap-2.5 text-ink">
             <LogoMark />
             <span className="font-display text-[1.6rem] leading-none">Leadsmith</span>
           </div>

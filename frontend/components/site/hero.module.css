@@ -1,159 +1,863 @@
+/* =====================================================================
+   HERO — "command" layout: headline → brief bar → live results.
+   No background texture: depth comes from the bar's ember beam and the
+   cards' shadows. All motion is CSS; HeroDemo only flips data-phase on
+   .demo and data-active on a .scene.
+   ===================================================================== */
+
 .hero {
   position: relative;
-  isolation: isolate;
-  overflow: clip;
-  padding-top: clamp(7.5rem, 15vh, 10.5rem);
-  padding-bottom: clamp(4.5rem, 9vw, 8rem);
+  padding-top: clamp(6.25rem, 12vh, 8.5rem);
+  padding-bottom: clamp(4rem, 8vw, 6.5rem);
+  overflow-x: clip;
 }
 
-/* ---------- backdrop ---------- */
-.backdrop {
+/* ---------- announcement pill ---------- */
+.pill {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  padding: 0.42rem 0.85rem 0.42rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--panel) 72%, transparent);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  color: var(--ink-2);
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease;
+  animation: rise 0.8s var(--ease-ember) both;
+}
+
+.pill:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+
+/* a soft ember glint that crosses the pill every few seconds */
+.pill::after {
+  content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  pointer-events: none;
+  background: linear-gradient(100deg, transparent 25%, color-mix(in oklab, var(--ember) 18%, transparent) 50%, transparent 75%);
+  translate: -100% 0;
+  animation: shine 6s var(--ease-ember) 1.8s infinite;
 }
 
-.grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 62% at 50% 28%, #000 25%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 62% at 50% 28%, #000 25%, transparent 78%);
+.dot {
+  color: var(--ink-3);
 }
 
-.glow {
-  position: absolute;
-  left: 50%;
-  top: 66%;
-  width: min(1400px, 140vw);
-  aspect-ratio: 2 / 1;
-  translate: -50% -50%;
-  background: radial-gradient(closest-side, var(--glow), transparent 72%);
-  animation: glow-drift 16s ease-in-out infinite alternate;
+.pillArrow {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 0.3s var(--ease-ember);
 }
 
-@keyframes glow-drift {
-  from {
-    transform: translate3d(-5%, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(5%, -4%, 0) scale(1.1);
-  }
+.pill:hover .pillArrow {
+  translate: 2px 0;
 }
 
-.embers span {
-  position: absolute;
-  bottom: -12px;
-  left: var(--x);
-  width: var(--size);
-  height: var(--size);
-  border-radius: 999px;
-  background: var(--ember);
-  box-shadow: 0 0 10px 2px var(--glow);
-  opacity: 0;
-  animation: ember-rise var(--dur) linear var(--delay) infinite;
-}
-
-@keyframes ember-rise {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.9;
-  }
-  100% {
-    transform: translate3d(var(--drift), -70vh, 0) scale(0.35);
-    opacity: 0;
-  }
-}
-
-/* ---------- headline: line-by-line mask reveal ---------- */
+/* ---------- headline: word-by-word mask reveal + a forged stroke ---------- */
 .title {
-  margin-top: 1.75rem;
-  font-size: clamp(3.5rem, 10.6vw, 9.75rem);
-  line-height: 0.9;
-  letter-spacing: -0.028em;
-}
-
-.title em {
-  font-style: italic;
-  padding-right: 0.06em;
+  margin-top: 1.4rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(3.3rem, 7.6vw, 7.25rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--ink);
 }
 
 .line {
   display: block;
-  overflow: clip;
-  padding-bottom: 0.1em;
-  margin-bottom: -0.1em;
+  overflow-y: clip;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
 }
 
-.line > span {
+/* room for the stroke under "evidence." inside the mask */
+.lineLast {
+  padding-bottom: 0.32em;
+  margin-bottom: -0.32em;
+}
+
+.word {
   display: inline-block;
-  animation: line-up 1.15s var(--ease-ember) both;
-  animation-delay: calc(var(--i) * 120ms + 60ms);
+  animation: word-up 1s var(--ease-ember) both;
+  animation-delay: calc(var(--i) * 75ms);
 }
 
-@keyframes line-up {
+.accent {
+  position: relative;
+  display: inline-block;
+  padding-right: 0.08em;
+  font-style: italic;
+  color: var(--ember-ink);
+}
+
+.stroke {
+  position: absolute;
+  left: 0;
+  bottom: -0.17em;
+  width: 100%;
+  height: 0.22em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.stroke path {
+  fill: none;
+  stroke: var(--ember);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1s var(--ease-ember) 0.8s forwards;
+}
+
+.stroke path + path {
+  stroke-width: 2.5;
+  opacity: 0.5;
+  animation-delay: 1.05s;
+}
+
+.lead {
+  margin-top: 1.75rem;
+  max-width: 60ch;
+  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+  animation: fade-up 0.8s var(--ease-ember) 0.15s both;
+}
+
+/* ---------- the brief bar ---------- */
+.demo {
+  width: 100%;
+  max-width: 62rem;
+  margin-top: clamp(1.75rem, 3.2vw, 2.25rem);
+}
+
+.bar {
+  position: relative;
+  isolation: isolate;
+  max-width: 47rem;
+  margin-inline: auto;
+  padding: 1.5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line-2);
+  box-shadow:
+    var(--sh-float),
+    0 26px 70px -38px color-mix(in oklab, var(--ember) 70%, transparent);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.4s ease;
+  animation: bar-in 0.9s var(--ease-ember) 0.28s both;
+}
+
+/* The beam: an ember arc travelling round the border (a rotating conic,
+   so it stays on the compositor). */
+.bar::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: max(100%, 30rem);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 60%,
+    color-mix(in oklab, var(--ember) 35%, transparent) 72%,
+    var(--ember) 80%,
+    transparent 86% 100%
+  );
+  transition: opacity 0.3s ease;
+  animation: beam 6s linear infinite;
+}
+
+.bar:focus-within {
+  background: var(--ember);
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--ember) 22%, transparent),
+    var(--sh-float);
+}
+
+.bar:focus-within::before {
+  opacity: 0;
+}
+
+.demo[data-phase="researching"] .bar {
+  box-shadow:
+    var(--sh-float),
+    0 0 0 4px color-mix(in oklab, var(--ember) 14%, transparent),
+    0 26px 70px -30px color-mix(in oklab, var(--ember) 85%, transparent);
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 4rem;
+  padding: 0.45rem 0.45rem 0.45rem 1.3rem;
+  border-radius: inherit;
+  background: var(--panel);
+  text-align: left;
+}
+
+.spark {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+  fill: var(--ember-ink);
+}
+
+.field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 1.06rem;
+  color: var(--ink);
+}
+
+.input::placeholder {
+  color: transparent;
+}
+
+.input:focus-visible {
+  outline: none; /* the whole bar shows focus instead */
+}
+
+/* The example brief that types itself; hidden as soon as the visitor types.
+   Fixed size + strict containment: each typed character re-lays out this box
+   only, never the page. */
+.ghost {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  height: 1.6em;
+  overflow: hidden;
+  contain: strict;
+  font-size: 1.06rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.input:focus ~ .ghost,
+.input:not(:placeholder-shown) ~ .ghost {
+  visibility: hidden;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  margin-left: 1px;
+  border-radius: 1px;
+  vertical-align: -0.22em;
+  background: var(--ember);
+  animation: blink 1.05s steps(1) infinite;
+}
+
+.go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.6rem;
+  height: 3.1rem;
+  padding: 0 0.7rem 0 1.3rem;
+  border-radius: 999px;
+  background: var(--ember);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--on-ember);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 10px 24px -12px var(--ember);
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s var(--ease-ember);
+}
+
+.go:hover {
+  background: color-mix(in oklab, var(--ember) 86%, white);
+}
+
+.go:active {
+  transform: translateY(1px);
+}
+
+/* the bar clips its overflow, so the focus ring sits inside the button */
+.go:focus-visible {
+  outline: 2px solid var(--on-ember);
+  outline-offset: -5px;
+}
+
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.12);
+}
+
+.kbd svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- status line ---------- */
+.status {
+  position: relative;
+  height: 1.4rem;
+  margin-top: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  animation: fade-up 0.8s var(--ease-ember) 0.5s both;
+}
+
+.status > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 0.35s ease,
+    translate 0.35s var(--ease-ember);
+}
+
+.demo[data-phase="typing"] .sTyping,
+.demo[data-phase="researching"] .sResearch,
+.demo[data-phase="dealt"] .sDone {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.sDone {
+  color: var(--ink-2);
+}
+
+.kbdInline {
+  padding: 0 0.3rem;
+  border: 1px solid var(--line-2);
+  border-radius: 0.35rem;
+  font-family: inherit;
+  color: var(--ink-2);
+}
+
+.tick {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- results: skeletons + three stacked scenes in one grid cell ---------- */
+.results {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  margin-top: 1.4rem;
+  text-align: left;
+}
+
+.results > * {
+  grid-area: 1 / 1;
+}
+
+.skeletons,
+.scene {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene:not([data-active]) {
+  visibility: hidden;
+}
+
+/* a gentle fan: middle card raised, outer cards deal in from a tilt */
+.scene > :nth-child(1) {
+  --r: -4deg;
+}
+
+.scene > :nth-child(3) {
+  --r: 4deg;
+}
+
+.scene > :nth-child(2),
+.skeletons > :nth-child(2) {
+  translate: 0 -0.75rem;
+}
+
+.card {
+  --d: calc(var(--j) * 0.11s);
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  padding: 1.1rem 1.15rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--panel);
+  box-shadow: var(--sh-card);
+  opacity: 0;
+}
+
+.demo[data-intro] .card {
+  --d: calc(0.7s + var(--j) * 0.12s);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1.05;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.domain {
+  margin-top: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-3);
+}
+
+.source {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.quote {
+  display: -webkit-box;
+  min-height: 2.6em;
+  margin-top: 0.4rem;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mark {
+  color: inherit;
+  background: linear-gradient(
+      color-mix(in oklab, var(--ember) 26%, transparent),
+      color-mix(in oklab, var(--ember) 26%, transparent)
+    )
+    no-repeat 0 92% / 100% 0.42em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.person {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+}
+
+.badge {
+  display: inline-flex;
+  flex: none;
+}
+
+/* the choreography, replayed every time a scene is dealt */
+.demo[data-phase="dealt"] .scene[data-active] .card {
+  animation: deal 0.85s var(--ease-spring) var(--d) both;
+}
+
+.demo[data-phase="dealt"] .scene[data-active] .ring {
+  animation: ring-sweep 1.2s var(--ease-ember) calc(var(--d) + 0.2s) both;
+}
+
+.demo[data-phase="dealt"] .scene[data-active] .ring > span {
+  animation: ring-count 1.2s var(--ease-ember) calc(var(--d) + 0.2s) both;
+}
+
+.demo[data-phase="dealt"] .scene[data-active] .mark {
+  animation: highlight 0.9s var(--ease-ember) calc(var(--d) + 0.45s) both;
+}
+
+.demo[data-phase="dealt"] .scene[data-active] .badge {
+  animation: pop 0.5s var(--ease-spring) calc(var(--d) + 0.8s) both;
+}
+
+.demo[data-phase="out"] .scene[data-active] .card {
+  animation: card-out 0.38s var(--ease-ember) both;
+}
+
+/* skeleton cards: show while a brief is typed and researched */
+.skeletons {
+  transition: opacity 0.35s ease;
+}
+
+.demo[data-phase="dealt"] .skeletons {
+  opacity: 0;
+  transition-delay: 0.25s;
+}
+
+.skel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-rows: 23px 23px auto auto 1fr;
+  column-gap: 0.8rem;
+  row-gap: 0.55rem;
+  min-height: 12rem;
+  padding: 1.1rem 1.15rem;
+  overflow: hidden;
+  border: 1px dashed var(--line-2);
+  border-radius: 1.25rem;
+  /* opaque, so the phone deck behind it doesn't show through */
+  background: color-mix(in oklab, var(--panel) 50%, var(--canvas));
+}
+
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--ember) 12%, transparent) 50%, transparent 70%);
+  translate: -100% 0;
+}
+
+.demo[data-phase="researching"] .skel::after {
+  animation: scan 1.1s linear infinite;
+}
+
+.skRing {
+  grid-row: 1 / span 2;
+  width: 46px;
+  height: 46px;
+  border: 4px solid var(--line);
+  border-radius: 999px;
+}
+
+.skLine {
+  align-self: end;
+  width: 70%;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.skShort {
+  align-self: start;
+  width: 42%;
+  height: 0.55rem;
+}
+
+.skQuote {
+  grid-column: 1 / -1;
+  width: 90%;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--line) 75%, transparent);
+}
+
+.skQuoteFirst {
+  margin-top: 1.6rem;
+}
+
+.skQuoteLast {
+  width: 58%;
+}
+
+.skFoot {
+  grid-column: 1 / -1;
+  align-self: end;
+  width: 46%;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+/* ---------- stack line ---------- */
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: clamp(2.75rem, 5vw, 3.75rem);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  animation: fade-up 0.8s var(--ease-ember) 0.9s both;
+}
+
+.stack b {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.stackSep {
+  width: 1.5rem;
+  height: 1px;
+  background: var(--line-2);
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 47.99rem) {
+  .skeletons,
+  .scene {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* one lead up front, the rest of the deck peeking behind */
+  .scene > :nth-child(n + 2),
+  .skeletons > :nth-child(n + 2) {
+    display: none;
+  }
+
+  .results {
+    margin-bottom: 1.2rem;
+  }
+
+  .results::before,
+  .results::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    background: var(--panel);
+  }
+
+  .results::before {
+    translate: 0 0.6rem;
+    scale: 0.95;
+    opacity: 0.8;
+  }
+
+  .results::after {
+    translate: 0 1.2rem;
+    scale: 0.9;
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  .hideSm {
+    display: none;
+  }
+
+  .bar {
+    border-radius: 1.6rem;
+  }
+
+  .barInner {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .spark {
+    align-self: flex-start;
+    margin-top: 0.2rem;
+  }
+
+  .field {
+    flex-basis: calc(100% - 2rem);
+    min-height: 2.8em;
+    align-items: flex-start;
+  }
+
+  .ghost {
+    display: -webkit-box;
+    height: 2.8em;
+    white-space: normal;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .go {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ---------- keyframes (CSS-module scoped) ---------- */
+@keyframes rise {
   from {
-    transform: translate3d(0, 105%, 0);
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+}
+
+@keyframes word-up {
+  from {
+    transform: translate3d(0, 108%, 0);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes bar-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.97);
+  }
+}
+
+@keyframes beam {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes shine {
+  0% {
+    translate: -100% 0;
+  }
+  40%,
+  100% {
+    translate: 100% 0;
+  }
+}
+
+@keyframes scan {
+  to {
+    translate: 100% 0;
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 2rem, 0) rotate(var(--r, 0deg)) scale(0.95);
   }
   to {
+    opacity: 1;
     transform: none;
   }
 }
 
-/* ---------- supporting copy ---------- */
-.fade {
-  animation: fade 0.9s ease both;
-}
-
-.rise {
-  animation: rise 0.9s var(--ease-ember) both;
-  animation-delay: var(--delay, 0.35s);
-}
-
-.consoleIn {
-  animation: rise 1.1s var(--ease-ember) 0.75s both;
-}
-
-@keyframes fade {
+@keyframes card-out {
   from {
+    opacity: 1;
+  }
+  to {
     opacity: 0;
+    transform: translate3d(0, -0.75rem, 0) scale(0.98);
   }
 }
 
-@keyframes rise {
+@keyframes ring-sweep {
   from {
-    opacity: 0;
-    transform: translate3d(0, 22px, 0);
+    --p: 0;
   }
 }
 
-/* Count-up numerals via a registered --num property (see globals.css). */
-.count {
-  --num: var(--to);
-  counter-reset: num var(--num);
-  animation: count 1.6s var(--ease-ember) 0.7s both;
-}
-
-.count::after {
-  content: counter(num, decimal-leading-zero);
-}
-
-@keyframes count {
+@keyframes ring-count {
   from {
     --num: 0;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .embers,
-  .glow {
-    display: none;
+@keyframes highlight {
+  from {
+    background-size: 0% 0.42em;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
   }
 }

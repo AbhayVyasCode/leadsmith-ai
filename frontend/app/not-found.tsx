@@ -16,7 +16,7 @@ export default function NotFound() {
       </header>
       <div className="wrapper relative grid place-items-center pb-24 text-center">
         <div>
-          <LogoMark className="mx-auto size-14 text-ink" />
+          <LogoMark className="mx-auto size-16" />
           <p className="eyebrow mt-8 text-ember-ink">Error 404</p>
           <h1 className="mt-4 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.025em] text-ink">
             Nothing forged <em className="text-ember-ink">here.</em>

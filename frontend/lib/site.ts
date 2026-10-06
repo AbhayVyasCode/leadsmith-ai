@@ -14,7 +14,6 @@ export type NavLink = { label: string; href: string };
 export const siteNav: NavLink[] = [
   { label: "How it works", href: "/#how" },
   { label: "Features", href: "/#features" },
-  { label: "Use cases", href: "/#use-cases" },
   { label: "FAQ", href: "/#faq" },
 ];
 

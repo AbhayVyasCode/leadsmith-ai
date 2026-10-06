@@ -50,7 +50,7 @@ export function Showcase() {
           <div className={s.frame} role="img" aria-label="Preview of the Leadsmith workspace showing a finished run with four ranked leads and one lead's case file open.">
             <aside className={s.side}>
               <div className={s.brand}>
-                <LogoMark className="size-6 text-ink" />
+                <LogoMark className="size-7" />
                 <span>Leadsmith</span>
               </div>
               <span className={s.newBtn}>

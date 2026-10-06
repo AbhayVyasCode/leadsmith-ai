@@ -5,9 +5,7 @@ import { Features } from "@/components/site/features";
 import { FinalCta } from "@/components/site/final-cta";
 import { Hero } from "@/components/site/hero";
 import { HowItWorks } from "@/components/site/how-it-works";
-import { Principles } from "@/components/site/principles";
 import { Showcase } from "@/components/site/showcase";
-import { UseCases } from "@/components/site/use-cases";
 import { site } from "@/lib/site";
 
 const jsonLd = {
@@ -30,8 +28,6 @@ export default function HomePage() {
       <HowItWorks />
       <Features />
       <Showcase />
-      <UseCases />
-      <Principles />
       <Faq />
       <FinalCta />
     </>

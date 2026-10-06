@@ -1,7 +1,9 @@
+import type { CSSProperties } from "react";
 import { Check, Minus, X } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo";
 import { SectionHeading } from "@/components/site/section-heading";
 import { cn } from "@/lib/cn";
+import s from "./comparison.module.css";
 
 type Verdict = "yes" | "no" | "some";
 type Cell = { v: Verdict; note: string };
@@ -69,9 +71,36 @@ const ICON: Record<Verdict, { icon: typeof Check; cls: string; label: string }> 
   no: { icon: X, cls: "bg-panel-2 text-ink-3", label: "No" },
 };
 
+const vars = (v: Record<string, string | number>) => v as CSSProperties;
+
+/** Leadsmith's ✓ is a stroke, so the scan can draw it. */
+function DrawnCheck() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={s.drawn}>
+      <path pathLength={1} d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+/** The logo, alive: it floats, a glint crosses the lens, a scan line sweeps it and radar rings pulse out. */
+function LiveMark({ className, small }: { className?: string; small?: boolean }) {
+  return (
+    <span aria-hidden className={cn(s.live, small && s.liveSmall, className)} data-loop>
+      <span className={s.radar} />
+      <span className={cn(s.radar, s.radarLate)} />
+      <span className={s.sparkGlow} />
+      <LogoMark className="size-full" />
+      <span className={s.lens}>
+        <span className={s.glint} />
+        <span className={s.scanline} />
+      </span>
+    </span>
+  );
+}
+
 export function Comparison() {
   return (
-    <section aria-labelledby="problem-title" className="py-28 lg:py-36">
+    <section aria-labelledby="problem-title" className="pt-28 lg:pt-36">
       <div className="wrapper grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-10">
         <SectionHeading
           id="problem-title"
@@ -80,7 +109,14 @@ export function Comparison() {
           className="lg:col-span-7"
           title={
             <>
-              A list is cheap. Knowing who deserves your <em>first message</em> isn’t.
+              A list is cheap. Knowing who deserves your{" "}
+              <em className={s.under}>
+                first message
+                <svg aria-hidden viewBox="0 0 300 20" preserveAspectRatio="none" className={s.underStroke}>
+                  <path pathLength={1} d="M4 13C70 5 150 3 296 8" />
+                </svg>
+              </em>{" "}
+              isn’t.
             </>
           }
         />
@@ -88,92 +124,150 @@ export function Comparison() {
           Lead databases tell you who exists. Scrapers grab whatever is on the page. Neither tells you why a company
           should hear from you this week — and neither shows its work.
         </p>
+      </div>
 
-        <div className="reveal lg:col-span-12">
-          {/* Phones get a compact verdict matrix (icons only, notes kept for screen
-              readers); from sm up the notes are shown and the table may scroll. */}
-          <div className="overflow-x-auto rounded-3xl border border-line bg-panel shadow-card">
-            <table className="w-full border-collapse text-left sm:min-w-[640px]">
-              <caption className="sr-only">How Leadsmith compares with bought lead lists and web scrapers</caption>
-              <thead>
-                <tr className="border-b border-line">
-                  <th scope="col" className="px-4 py-5 sm:w-[31%] sm:px-6">
-                    <span className="sr-only">Capability</span>
-                  </th>
-                  {COLUMNS.map((col) => (
-                    <th
-                      key={col.name}
-                      scope="col"
-                      className={cn(
-                        "w-[4.6rem] px-1.5 py-5 text-center align-bottom text-[0.76rem] font-medium text-ink-2 sm:w-auto sm:px-4 sm:text-left sm:text-[0.8rem]",
-                        col.name === "Leadsmith" && "bg-ember/[0.07] text-ink",
-                      )}
-                    >
-                      {col.name === "Leadsmith" ? (
-                        <span className="inline-flex flex-col items-center gap-1.5 font-display text-base leading-none text-ink sm:flex-row sm:gap-2 sm:text-xl">
-                          <LogoMark className="size-5" />
-                          Leadsmith
-                        </span>
-                      ) : (
-                        <>
-                          <span aria-hidden className="sm:hidden">
-                            {col.short}
-                          </span>
-                          <span className="sr-only sm:not-sr-only">{col.name}</span>
-                        </>
-                      )}
+      {/* The scan: on wide screens the table holds still while your scroll moves the
+          logo down the Leadsmith column; elsewhere the rows prove themselves as the
+          table passes. Pure CSS scroll timeline; without support it is simply shown. */}
+      <div className={s.track}>
+        <div className={s.stage}>
+          <div className="wrapper">
+            {/* Phones get a compact verdict matrix (icons only, notes kept for screen
+                readers); from sm up the notes are shown and the table may scroll. */}
+            <div className={s.card}>
+              <span aria-hidden className={s.beamTrack}>
+                <span className={s.beam} />
+              </span>
+
+              <table className={s.table}>
+                <caption className="sr-only">How Leadsmith compares with bought lead lists and web scrapers</caption>
+                <colgroup>
+                  <col className={s.colLabel} />
+                  <col className={s.colThem} />
+                  <col className={s.colThem} />
+                  <col className={s.colUs} />
+                </colgroup>
+                <thead>
+                  <tr className={s.headRow}>
+                    <th scope="col" className="px-4 sm:px-6">
+                      <span className="sr-only">Capability</span>
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ROWS.map((row) => (
-                  <tr key={row.label} className="border-b border-line last:border-b-0">
-                    <th scope="row" className="px-4 py-4 text-[0.9rem] font-medium leading-snug text-ink sm:px-6 sm:text-[0.98rem]">
-                      {row.label}
-                    </th>
-                    {row.cells.map((cell, i) => {
-                      const meta = ICON[cell.v];
-                      const Icon = meta.icon;
-                      return (
-                        <td key={i} className={cn("px-1.5 py-4 align-middle sm:px-4 sm:align-top", i === 2 && "bg-ember/[0.07]")}>
-                          <span className="flex items-start justify-center gap-2.5 sm:justify-start">
-                            <span
-                              className={cn(
-                                "inline-flex size-6 shrink-0 items-center justify-center rounded-full sm:mt-0.5 sm:size-5",
-                                meta.cls,
-                              )}
-                            >
-                              <Icon className="size-3.5 sm:size-3" strokeWidth={2.6} aria-hidden />
+                    {COLUMNS.map((col) => (
+                      <th
+                        key={col.name}
+                        scope="col"
+                        className={cn(
+                          "px-1.5 text-center align-bottom text-[0.76rem] font-medium text-ink-2 sm:px-4 sm:text-left sm:text-[0.8rem]",
+                          col.name === "Leadsmith" && cn(s.usHead, "bg-ember/[0.07] text-ink"),
+                        )}
+                      >
+                        {col.name === "Leadsmith" ? (
+                          <span className="inline-flex flex-col items-center gap-1.5 font-display text-base leading-none text-ink sm:flex-row sm:gap-2 sm:text-xl">
+                            <span className={s.home}>
+                              <LiveMark small className="size-7" />
                             </span>
-                            <span className={cn("sr-only text-[0.84rem] leading-snug sm:not-sr-only", i === 2 ? "text-ink" : "text-ink-2")}>
-                              <span className="sr-only">{meta.label}: </span>
-                              {cell.note}
-                            </span>
+                            Leadsmith
                           </span>
-                        </td>
-                      );
-                    })}
+                        ) : (
+                          <>
+                            <span aria-hidden className="sm:hidden">
+                              {col.short}
+                            </span>
+                            <span className="sr-only sm:not-sr-only">{col.name}</span>
+                          </>
+                        )}
+                      </th>
+                    ))}
                   </tr>
+                </thead>
+                <tbody>
+                  {ROWS.map((row, k) => (
+                    <tr key={row.label} className={s.row} style={vars({ "--k": k })}>
+                      <th scope="row" className={cn(s.label, "px-4 text-[0.9rem] font-medium leading-snug text-ink sm:px-6 sm:text-[0.98rem]")}>
+                        {row.label}
+                      </th>
+                      {row.cells.map((cell, i) => {
+                        const meta = ICON[cell.v];
+                        const Icon = meta.icon;
+                        const us = i === 2;
+                        return (
+                          <td
+                            key={i}
+                            className={cn(s.cell, us && cn(s.us, "bg-ember/[0.07]"), "px-1.5 align-middle sm:px-4")}
+                            style={vars({ "--c": i })}
+                          >
+                            <span className="flex items-center justify-center gap-2.5 sm:justify-start">
+                              <span className={s.slot}>
+                                <span
+                                  data-v={cell.v}
+                                  className={cn(
+                                    s.icon,
+                                    us && s.usIcon,
+                                    "inline-flex size-6 shrink-0 items-center justify-center rounded-full sm:size-5",
+                                    meta.cls,
+                                  )}
+                                >
+                                  {us ? <DrawnCheck /> : <Icon className="size-3.5 sm:size-3" strokeWidth={2.6} aria-hidden />}
+                                </span>
+                              </span>
+                              <span className={cn(s.note, "sr-only text-[0.84rem] leading-snug sm:not-sr-only", us ? "text-ink" : "text-ink-2")}>
+                                <span className="sr-only">{meta.label}: </span>
+                                {cell.note}
+                              </span>
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* the scanner: rides a rail beside the Leadsmith column, then docks in its header */}
+              <span aria-hidden className={s.rail}>
+                <span className={s.railFill} />
+                {ROWS.map((row, k) => (
+                  <span key={row.label} className={s.railDot} style={vars({ "--k": k })} />
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <p aria-hidden className="mt-4 flex justify-center gap-5 text-[0.8rem] text-ink-3 sm:hidden">
-            {(Object.keys(ICON) as Verdict[]).map((v) => {
-              const Icon = ICON[v].icon;
-              return (
-                <span key={v} className="inline-flex items-center gap-1.5">
-                  <span className={cn("inline-flex size-4 items-center justify-center rounded-full", ICON[v].cls)}>
-                    <Icon className="size-2.5" strokeWidth={2.8} />
+              </span>
+              <span aria-hidden className={s.scanner}>
+                <span className={s.dock}>
+                  <span className={s.bob} data-loop>
+                    <LiveMark className={s.scanMark} />
                   </span>
-                  {ICON[v].label}
                 </span>
-              );
-            })}
-          </p>
+              </span>
+              <span aria-hidden className={s.columnGlow} />
+            </div>
+
+            <p aria-hidden className={s.progress}>
+              <span className={s.segments}>
+                {ROWS.map((row, k) => (
+                  <i key={row.label} style={vars({ "--k": k })} />
+                ))}
+              </span>
+              <span>
+                <b className={s.count} /> of 6 proven with evidence
+              </span>
+            </p>
+
+            <p aria-hidden className="mt-4 flex justify-center gap-5 text-[0.8rem] text-ink-3 sm:hidden">
+              {(Object.keys(ICON) as Verdict[]).map((v) => {
+                const Icon = ICON[v].icon;
+                return (
+                  <span key={v} className="inline-flex items-center gap-1.5">
+                    <span className={cn("inline-flex size-4 items-center justify-center rounded-full", ICON[v].cls)}>
+                      <Icon className="size-2.5" strokeWidth={2.8} />
+                    </span>
+                    {ICON[v].label}
+                  </span>
+                );
+              })}
+            </p>
+          </div>
         </div>
       </div>
+      <div className="pb-28 lg:pb-36" />
     </section>
   );
 }

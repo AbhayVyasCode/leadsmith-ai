@@ -39,12 +39,12 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-title" className="py-28 lg:py-36">
+    <section id="faq" aria-labelledby="faq-title" className="border-t border-line py-28 lg:py-36">
       <div className="wrapper grid grid-cols-1 gap-14 lg:grid-cols-12 lg:gap-10">
         <div className="self-start lg:sticky lg:top-28 lg:col-span-4">
           <SectionHeading
             id="faq-title"
-            index="07"
+            index="05"
             kicker="FAQ"
             title={
               <>

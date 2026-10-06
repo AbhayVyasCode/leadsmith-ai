@@ -9,11 +9,13 @@ export const contentType = "image/png";
 // Brand social card, rendered at build time with the real display face
 // (Instrument Serif, OFL — bundled in assets/fonts so no network is needed).
 export default async function OpengraphImage() {
-  const dir = path.join(process.cwd(), "assets", "fonts");
-  const [regular, italic] = await Promise.all([
-    readFile(path.join(dir, "InstrumentSerif-Regular.ttf")),
-    readFile(path.join(dir, "InstrumentSerif-Italic.ttf")),
+  const assets = path.join(process.cwd(), "assets");
+  const [regular, italic, mark] = await Promise.all([
+    readFile(path.join(assets, "fonts", "InstrumentSerif-Regular.ttf")),
+    readFile(path.join(assets, "fonts", "InstrumentSerif-Italic.ttf")),
+    readFile(path.join(assets, "brand", "mark-dark.png")),
   ]);
+  const markSrc = `data:image/png;base64,${mark.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -26,21 +28,14 @@ export default async function OpengraphImage() {
           justifyContent: "space-between",
           padding: "72px 80px",
           background: "#0f0e0d",
-          backgroundImage:
-            "radial-gradient(900px 420px at 50% 120%, rgba(255,106,51,0.55), transparent), linear-gradient(rgba(244,240,232,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(244,240,232,0.05) 1px, transparent 1px)",
-          backgroundSize: "100% 100%, 56px 56px, 56px 56px",
+          backgroundImage: "radial-gradient(900px 420px at 50% 120%, rgba(255,106,51,0.55), transparent)",
           color: "#f4f0e8",
           fontFamily: "Instrument Serif",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <svg width="56" height="56" viewBox="0 0 32 32">
-            <path d="M9.2 14.2h13.6l5.4 12.3H3.8z" fill="#f4f0e8" />
-            <path
-              d="M22.5 2.4c.45 3.1 1.6 4.3 4.7 4.75-3.1.45-4.25 1.65-4.7 4.75-.45-3.1-1.6-4.3-4.7-4.75 3.1-.45 4.25-1.65 4.7-4.75z"
-              fill="#ff6a33"
-            />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser */}
+          <img src={markSrc} width={72} height={72} alt="" />
           <div style={{ display: "flex", fontSize: 44 }}>Leadsmith</div>
         </div>
 

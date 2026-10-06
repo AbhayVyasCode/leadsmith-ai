@@ -36,12 +36,14 @@ function Discover() {
   const router = useRouter();
   const params = useSearchParams();
   const runId = params.get("run");
+  const briefParam = params.get("brief");
 
   const [draft, setDraft] = useState("");
   const [flags, setFlags] = useState<RunFlags>({ ...DEFAULT_FLAGS, mode: "customer" });
   const [selected, setSelected] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [focusBrief, setFocusBrief] = useState(false);
   const handled = useRef<string | null>(null);
   const { loadRun, reset, start, continueRun, stop } = run;
 
@@ -69,6 +71,18 @@ function Discover() {
       })
       .finally(() => setLoading(false));
   }, [runId, loadRun, router]);
+
+  // Arriving from the landing page's brief bar: pre-fill the composer once,
+  // then drop the parameter so a refresh doesn't re-apply it.
+  useEffect(() => {
+    if (briefParam === null || runId) return;
+    const brief = briefParam.trim().slice(0, 500);
+    if (brief) {
+      setDraft(brief);
+      setFocusBrief(true);
+    }
+    router.replace("/app");
+  }, [briefParam, runId, router]);
 
   const clearRunParam = useCallback(() => {
     if (runId) router.replace("/app");
@@ -98,7 +112,17 @@ function Discover() {
   if (loading) return <LoadingRun />;
 
   if (run.status === "idle") {
-    return <Composer value={draft} onChange={setDraft} flags={flags} onFlagsChange={setFlags} onSubmit={(brief) => begin(brief, flags)} notice={notice} />;
+    return (
+      <Composer
+        value={draft}
+        onChange={setDraft}
+        flags={flags}
+        onFlagsChange={setFlags}
+        onSubmit={(brief) => begin(brief, flags)}
+        notice={notice}
+        autoFocus={focusBrief}
+      />
+    );
   }
 
   const effective = run.flags ?? flags;

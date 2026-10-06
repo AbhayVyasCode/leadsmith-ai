@@ -1,0 +1,11 @@
+/* Light and dark artwork swap with the theme class, so only the visible one
+   is downloaded. A .dark island (e.g. the final CTA) gets the dark mark too. */
+.mark {
+  display: inline-block;
+  flex: none;
+  background: url("./mark-light.webp") center / contain no-repeat;
+}
+
+:global(.dark) .mark {
+  background-image: url("./mark-dark.webp");
+}

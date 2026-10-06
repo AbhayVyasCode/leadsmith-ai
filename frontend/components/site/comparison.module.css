@@ -1,0 +1,1077 @@
+/* =====================================================================
+   THE PROBLEM — a scroll-driven scan.
+
+   Base styles are the finished table: what browsers without scroll
+   timelines and reduced-motion visitors get. Inside @supports + no-
+   preference, rows start "pending" and a named view timeline (--scan, on
+   .track) proves them one by one. On wide screens the stage pins and the
+   logo rides a rail beside the Leadsmith column, then docks in its header.
+
+   Scan progress map (fractions of the scan):
+     0.00–0.06  scanner arrives       0.06 + 0.13k   row k (k = 0…5)
+     0.84–0.96  scanner docks         0.86–0.98      column lights up
+   Every animated element sets --a/--b (start/end fraction) and uses
+     animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) …
+   so one map serves both the pinned and the free-scrolling layout.
+   ===================================================================== */
+
+/* ---------- heading underline ---------- */
+.under {
+  position: relative;
+  display: inline-block;
+}
+
+.underStroke {
+  position: absolute;
+  left: -2%;
+  bottom: -0.12em;
+  width: 104%;
+  height: 0.2em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.underStroke path {
+  fill: none;
+  stroke: var(--ember);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+/* ---------- card + table (finished state) ---------- */
+/* the site's heading → content gap (mt-14); a touch more on large screens,
+   where the headline is bigger and its underline hangs below it */
+.track {
+  margin-top: 3.5rem;
+}
+
+@media (min-width: 64rem) {
+  .track {
+    margin-top: 4rem;
+  }
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  background: var(--panel);
+  box-shadow: var(--sh-card);
+}
+
+.table {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.colThem,
+.colUs {
+  width: 4.6rem;
+}
+
+.headRow {
+  border-bottom: 1px solid var(--line);
+}
+
+.headRow > th {
+  padding-block: 1.25rem;
+}
+
+.row {
+  border-bottom: 1px solid var(--line);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row > th,
+.row > td {
+  position: relative;
+  padding-block: 1rem;
+}
+
+.slot {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+}
+
+/* a "pending" dot under each verdict, shown only while a row waits to be scanned */
+.slot::before {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-2);
+  opacity: 0;
+}
+
+.icon {
+  position: relative;
+}
+
+.drawn {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.drawn path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.home {
+  position: relative;
+  display: inline-flex;
+}
+
+.rail,
+.scanner,
+.beamTrack,
+.columnGlow {
+  display: none;
+}
+
+/* ---------- progress ---------- */
+/* decorative (aria-hidden) and drawn partly by CSS, so keep it out of copied text */
+.progress {
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 0.9rem;
+  margin-top: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+
+.segments {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.segments i {
+  position: relative;
+  display: block;
+  width: 1.4rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.segments i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ember);
+  transform-origin: left;
+}
+
+.count {
+  --num: 6;
+  counter-reset: n var(--num);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.count::after {
+  content: counter(n);
+}
+
+@media (min-width: 40rem) {
+  .table {
+    min-width: 640px;
+  }
+
+  .colLabel {
+    width: 31%;
+  }
+
+  .colThem,
+  .colUs {
+    width: auto;
+  }
+
+  .drawn {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+/* ---------- the living logo ---------- */
+.live {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+
+.radar {
+  position: absolute;
+  left: 41.7%;
+  top: 44%;
+  width: 54%;
+  aspect-ratio: 1;
+  border: 2px solid var(--ember);
+  border-radius: 50%;
+  translate: -50% -50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: radar 2.4s var(--ease-ember) infinite;
+}
+
+.radarLate {
+  animation-delay: 1.2s;
+}
+
+.sparkGlow {
+  position: absolute;
+  left: 83%;
+  top: 18%;
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--ember) 60%, transparent), transparent 68%);
+  opacity: 0.2;
+  pointer-events: none;
+  animation: flicker 1.3s ease-in-out infinite alternate;
+}
+
+.lens {
+  position: absolute;
+  left: 41.7%;
+  top: 44%;
+  width: 51%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+/* light glancing off the glass */
+.glint {
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  left: 0;
+  width: 34%;
+  rotate: 20deg;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  translate: -180% 0;
+  animation: glint 3.8s var(--ease-ember) 0.8s infinite;
+}
+
+/* an ember scan line sweeping the lens */
+.scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    transparent 44%,
+    color-mix(in oklab, var(--ember) 35%, transparent) 47.5%,
+    var(--ember) 49.4%,
+    var(--ember) 50.6%,
+    color-mix(in oklab, var(--ember) 35%, transparent) 52.5%,
+    transparent 56%
+  );
+  opacity: 0.85;
+  animation: scanline 2.4s ease-in-out infinite alternate;
+}
+
+.liveSmall .radar {
+  border-width: 1.5px;
+  animation-duration: 3s;
+}
+
+.liveSmall .radarLate {
+  animation-delay: 1.5s;
+}
+
+.liveSmall .lens,
+.liveSmall .sparkGlow {
+  display: none;
+}
+
+.bob {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: bob 3.4s ease-in-out infinite alternate;
+}
+
+.scanMark {
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar,
+  .lens,
+  .sparkGlow {
+    display: none;
+  }
+}
+
+/* =====================================================================
+   THE SCAN (only where scroll timelines exist and motion is welcome)
+   ===================================================================== */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* free-scrolling default: rows prove themselves as the table crosses the middle of the screen */
+    .track {
+      view-timeline: --scan block;
+      --rn: cover;
+      --s: 15%;
+      --l: 42%;
+    }
+
+    .underStroke path {
+      animation: draw linear both;
+      animation-timeline: view();
+      animation-range: entry 70% cover 45%;
+    }
+
+    .row {
+      --ra: calc(0.06 + var(--k) * 0.13);
+    }
+
+    .label {
+      --d: 0;
+    }
+
+    .cell {
+      --d: calc(0.08 + var(--c) * 0.1);
+    }
+
+    /* pending dot fades as the verdict lands */
+    .slot::before {
+      --a: calc(var(--ra) + var(--d) * 0.13);
+      --b: calc(var(--ra) + (var(--d) + 0.25) * 0.13);
+      animation: dot-out linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    /* verdicts: ✓ and – pop, ✕ pops then shakes its head, Leadsmith's ✓ lands last and bigger */
+    .icon {
+      --a: calc(var(--ra) + var(--d) * 0.13);
+      --b: calc(var(--ra) + (var(--d) + 0.3) * 0.13);
+      animation: pop linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    .icon[data-v="no"] {
+      animation-name: pop-no;
+    }
+
+    .usIcon {
+      animation-name: pop-us;
+    }
+
+    .drawn path {
+      --a: calc(var(--ra) + (var(--d) + 0.08) * 0.13);
+      --b: calc(var(--ra) + (var(--d) + 0.4) * 0.13);
+      animation: draw linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    /* a quick ember sweep across the row, left to right */
+    .label::before,
+    .cell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: color-mix(in oklab, var(--ember) 9%, transparent);
+      pointer-events: none;
+      --f: calc(var(--d) * 0.5);
+      --a: calc(var(--ra) + var(--f) * 0.13);
+      --b: calc(var(--ra) + (var(--f) + 0.65) * 0.13);
+      animation: flash linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    /* proven rows keep an ember tick and a warm Leadsmith cell */
+    .label::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 24%;
+      bottom: 24%;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--ember);
+      transform-origin: top;
+      --a: calc(var(--ra) + 0.35 * 0.13);
+      --b: calc(var(--ra) + 0.6 * 0.13);
+      animation: tick linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    .us::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(90deg, color-mix(in oklab, var(--ember) 16%, transparent), color-mix(in oklab, var(--ember) 4%, transparent));
+      pointer-events: none;
+      --a: calc(var(--ra) + var(--d) * 0.13);
+      --b: calc(var(--ra) + 0.13);
+      animation: glow-in linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    /* progress: one segment per proven row, and a stepped counter */
+    .segments i {
+      --ra: calc(0.06 + var(--k) * 0.13);
+    }
+
+    .segments i::after {
+      --a: calc(var(--ra) + 0.35 * 0.13);
+      --b: calc(var(--ra) + 0.6 * 0.13);
+      animation: fill-x linear both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * var(--a)) var(--rn) calc(var(--s) + var(--l) * var(--b));
+    }
+
+    .count {
+      animation: count-up steps(6, jump-start) both;
+      animation-timeline: --scan;
+      animation-range: var(--rn) calc(var(--s) + var(--l) * 0.112) var(--rn) calc(var(--s) + var(--l) * 0.892);
+    }
+
+    /* ---------- wide screens: pin the table and send the logo down the column ---------- */
+    @media (min-width: 80rem) and (min-height: 43.75rem) {
+      .track {
+        height: 190vh;
+        --rn: contain;
+        --s: 0%;
+        --l: 100%;
+      }
+
+      /* pinned roughly centred on tall screens, never under the fixed header */
+      .stage {
+        position: sticky;
+        top: max(6.5rem, calc(50vh - 17.5rem));
+      }
+
+      .card {
+        --gutter: 6rem;
+        --row-h: 4.25rem;
+        --head-h: 4.75rem;
+        --scan-size: 4.5rem;
+        padding-right: var(--gutter);
+        overflow: visible;
+      }
+
+      .table {
+        min-width: 0;
+        table-layout: fixed;
+      }
+
+      .colLabel {
+        width: 30%;
+      }
+
+      .colThem {
+        width: 21%;
+      }
+
+      .colUs {
+        width: 28%;
+      }
+
+      .headRow {
+        height: var(--head-h);
+      }
+
+      .headRow > th {
+        padding-block: 0;
+        vertical-align: middle;
+      }
+
+      .row {
+        height: var(--row-h);
+      }
+
+      .row > th,
+      .row > td {
+        padding-block: 0;
+      }
+
+      .row .note {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      .rail,
+      .scanner,
+      .beamTrack,
+      .columnGlow {
+        display: block;
+      }
+
+      /* the rail the scanner rides, filling behind it */
+      .rail {
+        position: absolute;
+        z-index: 1;
+        left: calc(100cqw + var(--gutter) / 2 - 1px);
+        top: calc(var(--head-h) + var(--row-h) / 2);
+        width: 2px;
+        height: calc(var(--row-h) * 5);
+        border-radius: 2px;
+        background: var(--line);
+      }
+
+      .railFill {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--ember);
+        transform-origin: top;
+        animation: rail-fill ease-in-out both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 0% var(--rn) 100%;
+      }
+
+      .railDot {
+        position: absolute;
+        left: 50%;
+        top: calc(var(--row-h) * var(--k));
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        translate: -50% -50%;
+        background: var(--line-2);
+        box-shadow: 0 0 0 3px var(--panel);
+      }
+
+      .railDot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--ember);
+        --a: calc(0.05 + var(--k) * 0.13);
+        --b: calc(0.07 + var(--k) * 0.13);
+        animation: fade-in linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) calc(var(--l) * var(--a)) var(--rn) calc(var(--l) * var(--b));
+      }
+
+      /* light from the lens washing across the Leadsmith cell, behind the text */
+      .beamTrack {
+        position: absolute;
+        z-index: 0;
+        left: 72cqw;
+        top: var(--head-h);
+        width: calc(28cqw + var(--gutter) / 2);
+        height: var(--row-h);
+        animation: scan-move ease-in-out both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 0% var(--rn) 100%;
+      }
+
+      .beam {
+        position: absolute;
+        inset: 6px 0;
+        border-radius: 0.9rem;
+        background: linear-gradient(
+          270deg,
+          color-mix(in oklab, var(--ember) 32%, transparent),
+          color-mix(in oklab, var(--ember) 10%, transparent) 55%,
+          transparent
+        );
+        transform-origin: right;
+        animation: beam linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 0% var(--rn) 100%;
+      }
+
+      .scanner {
+        position: absolute;
+        z-index: 3;
+        left: calc(100cqw + (var(--gutter) - var(--scan-size)) / 2);
+        top: calc(var(--head-h) + (var(--row-h) - var(--scan-size)) / 2);
+        width: var(--scan-size);
+        height: var(--scan-size);
+        animation: scan-move ease-in-out both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 0% var(--rn) 100%;
+      }
+
+      /* arrive, ride the rail, then fly home into the column header */
+      .dock {
+        display: block;
+        width: 100%;
+        height: 100%;
+        --dock-x: calc(-28cqw + 1.875rem - var(--gutter) / 2);
+        --dock-y: calc(var(--head-h) / -2 - var(--row-h) * 5.5);
+        --dock-s: 0.3889;
+        animation: dock linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 0% var(--rn) 100%;
+      }
+
+      .home {
+        animation: home-in linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 92% var(--rn) 97%;
+      }
+
+      .home::after {
+        content: "";
+        position: absolute;
+        inset: -25%;
+        border: 2px solid var(--ember);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: burst linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 93% var(--rn) 99%;
+      }
+
+      /* the finale: the whole Leadsmith column lights up */
+      .columnGlow {
+        position: absolute;
+        z-index: 2;
+        left: 72cqw;
+        top: 0;
+        bottom: 0;
+        width: 28cqw;
+        overflow: hidden;
+        border-radius: 0.9rem;
+        box-shadow:
+          inset 0 0 0 1.5px var(--ember),
+          0 0 44px -10px color-mix(in oklab, var(--ember) 60%, transparent);
+        pointer-events: none;
+        animation: fade-in linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 86% var(--rn) 93%;
+      }
+
+      .columnGlow::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 30%;
+        background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--ember) 18%, transparent), transparent);
+        translate: 0 -100%;
+        animation: sweep-down linear both;
+        animation-timeline: --scan;
+        animation-range: var(--rn) 86% var(--rn) 98%;
+      }
+    }
+  }
+}
+
+/* ---------- keyframes ---------- */
+@keyframes radar {
+  0% {
+    opacity: 0.7;
+    scale: 0.95;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.1;
+  }
+}
+
+@keyframes flicker {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 0.75;
+  }
+}
+
+@keyframes glint {
+  0% {
+    translate: -180% 0;
+  }
+  32%,
+  100% {
+    translate: 420% 0;
+  }
+}
+
+@keyframes scanline {
+  from {
+    translate: 0 -36%;
+  }
+  to {
+    translate: 0 36%;
+  }
+}
+
+@keyframes bob {
+  from {
+    translate: 0 -3px;
+  }
+  to {
+    translate: 0 3px;
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dot-out {
+  0%,
+  30% {
+    opacity: 1;
+  }
+  60%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  55% {
+    opacity: 1;
+    scale: 1.18;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes pop-no {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  40% {
+    opacity: 1;
+    scale: 1.12;
+  }
+  55% {
+    scale: 1;
+    translate: 0 0;
+  }
+  66% {
+    translate: -3px 0;
+  }
+  77% {
+    translate: 3px 0;
+  }
+  88% {
+    translate: -1.5px 0;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes pop-us {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.3;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes glow-in {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes tick {
+  from {
+    scale: 1 0;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+@keyframes fill-x {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+@keyframes count-up {
+  from {
+    --num: 0;
+  }
+  to {
+    --num: 6;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rail-fill {
+  0%,
+  14.45% {
+    scale: 1 0;
+  }
+  19%,
+  27.45% {
+    scale: 1 0.2;
+  }
+  32%,
+  40.45% {
+    scale: 1 0.4;
+  }
+  45%,
+  53.45% {
+    scale: 1 0.6;
+  }
+  58%,
+  66.45% {
+    scale: 1 0.8;
+  }
+  71%,
+  100% {
+    scale: 1 1;
+  }
+}
+
+/* the scanner dwells on each row (proving it), then glides to the next */
+@keyframes scan-move {
+  0%,
+  14.45% {
+    translate: 0 0;
+  }
+  19%,
+  27.45% {
+    translate: 0 calc(var(--row-h) * 1);
+  }
+  32%,
+  40.45% {
+    translate: 0 calc(var(--row-h) * 2);
+  }
+  45%,
+  53.45% {
+    translate: 0 calc(var(--row-h) * 3);
+  }
+  58%,
+  66.45% {
+    translate: 0 calc(var(--row-h) * 4);
+  }
+  71%,
+  100% {
+    translate: 0 calc(var(--row-h) * 5);
+  }
+}
+
+/* one pulse of light per row */
+@keyframes beam {
+  0%,
+  6% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  8.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  14% {
+    opacity: 0;
+    scale: 1 1;
+  }
+  19% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  21.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  27% {
+    opacity: 0;
+    scale: 1 1;
+  }
+  32% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  34.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  40% {
+    opacity: 0;
+    scale: 1 1;
+  }
+  45% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  47.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  53% {
+    opacity: 0;
+    scale: 1 1;
+  }
+  58% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  60.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  66% {
+    opacity: 0;
+    scale: 1 1;
+  }
+  71% {
+    opacity: 0;
+    scale: 0 1;
+  }
+  73.5% {
+    opacity: 1;
+    scale: 1 1;
+  }
+  79%,
+  100% {
+    opacity: 0;
+    scale: 1 1;
+  }
+}
+
+@keyframes dock {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+    translate: 0 -1.5rem;
+  }
+  6% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+  84% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+  93% {
+    opacity: 1;
+    scale: var(--dock-s);
+    translate: var(--dock-x) var(--dock-y);
+  }
+  96%,
+  100% {
+    opacity: 0;
+    scale: var(--dock-s);
+    translate: var(--dock-x) var(--dock-y);
+  }
+}
+
+@keyframes home-in {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.25;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes burst {
+  0% {
+    opacity: 0.9;
+    scale: 0.6;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.4;
+  }
+}
+
+@keyframes sweep-down {
+  to {
+    translate: 0 340%;
+  }
+}

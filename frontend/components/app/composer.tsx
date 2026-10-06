@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Globe, History, Users } from "lucide-react";
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { describeEngine, EngineDot, useEngine } from "@/components/app/engine";
 import { RunSettings } from "@/components/app/run-settings";
 import { ArrowGlyph, Button } from "@/components/ui/button";
@@ -105,6 +105,7 @@ export function Composer({
   onFlagsChange,
   onSubmit,
   notice,
+  autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -112,7 +113,17 @@ export function Composer({
   onFlagsChange: (flags: RunFlags) => void;
   onSubmit: (brief: string) => void;
   notice?: string | null;
+  /** Focus the brief with the cursor at the end (e.g. arriving with a pre-filled brief). */
+  autoFocus?: boolean;
 }) {
+  const briefRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = briefRef.current;
+    if (!autoFocus || !el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [autoFocus]);
+
   const product = flags.mode === "product";
   const trimmed = value.trim();
   const isUrl = looksLikeUrl(trimmed);
@@ -177,6 +188,7 @@ export function Composer({
             {product ? "Your product’s URL" : "Describe who you want to find"}
           </label>
           <textarea
+            ref={briefRef}
             id="brief"
             value={value}
             onChange={(e) => onChange(e.target.value)}
